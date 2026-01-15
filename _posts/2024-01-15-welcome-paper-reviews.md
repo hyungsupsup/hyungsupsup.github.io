@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "논문 리뷰 카테고리 오픈!"
-date: 2024-01-15 00:00:00
+date: 2024-01-14 00:00:00
 categories: [physical-ai, cv, nlp, rl, skills]
 tags: notice
 ---
