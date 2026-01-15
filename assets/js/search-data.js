@@ -44,15 +44,15 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "/blog/";
               },
-            },{id: "post-",
+            },{id: "post-octo-an-open-source-generalist-robot-policy",
         
-          title: "",
+          title: "Octo: An Open-Source Generalist Robot Policy",
         
-        description: "",
+        description: "an example of a blog post with table of contents on a sidebar",
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2026/2026-01-15-Octo_An-Open-Source-Generalist-Robot-Policy/";
+            window.location.href = "/blog/2026/Octo_An-Open-Source-Generalist-Robot-Policy/";
           
         },
       },{id: "post-google-gemini-updates-flash-1-5-gemma-2-and-project-astra",
