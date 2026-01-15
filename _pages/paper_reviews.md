@@ -1,18 +1,18 @@
 ---
 layout: page
-title: 논문리뷰
+title: "논문리뷰"
 nav: true
 nav_order: 4
 dropdown: true
 children:
-  - title: Physical AI
+  - title: "Physical AI"
     permalink: /blog/category/physical-ai/
-  - title: CV
+  - title: "CV"
     permalink: /blog/category/cv/
-  - title: NLP
+  - title: "NLP"
     permalink: /blog/category/nlp/
-  - title: RL
+  - title: "RL"
     permalink: /blog/category/rl/
-  - title: Skills
+  - title: "Skills"
     permalink: /blog/category/skills/
 ---
