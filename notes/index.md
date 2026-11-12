@@ -3,11 +3,6 @@ title: 섭노트
 date: 2026-11-12
 ---
 
-<div class="home-hero">
-<p>피지컬 AI(로봇 학습 · VLA · 월드모델)를 공부하고 직접 실험한 기록.</p>
-<div class="home-tags"><span>Diffusion Policy</span><span>Flow-matching VLA</span><span>Video World Model</span><span>Embodied Agent</span></div>
-</div>
-
 ## 매일
 
 <div class="home-grid">

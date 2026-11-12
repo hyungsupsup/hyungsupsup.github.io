@@ -270,3 +270,11 @@ a.home-card {
 .explorer .folder-outer > ul.content {
   border-left-color: var(--gray) !important;
 }
+
+// 홈: 페이지 제목·날짜·읽기시간·프로퍼티 숨김
+body[data-slug="index"] {
+  & .article-title,
+  & .content-meta,
+  & .note-properties,
+  & .breadcrumb-container { display: none !important; }
+}
