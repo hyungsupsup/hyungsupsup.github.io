@@ -3,26 +3,8 @@ title: 섭노트
 date: 2026-11-12
 ---
 
-## 매일
-
-<div class="home-grid">
-<a class="home-card internal" href="./daily/"><strong>☀️ 데일리 인사이트</strong><small>오늘의 기법 · 최신 논문 · 아이디어 질문</small></a>
-<a class="home-card internal" href="./techniques/"><strong>🧩 기법 사전</strong><small>Attention · LoRA · CLIP · Mamba · Flow Matching …</small></a>
-</div>
-
-## 지식
-
-<div class="home-grid">
-<a class="home-card internal" href="./knowledge/map"><strong>📚 분야 지도</strong><small>대표 논문과 최신 논문의 계보</small></a>
-<a class="home-card internal" href="./knowledge/venues/"><strong>🏛️ 학회별 논문</strong><small>CVPR 2025 Physical AI 논문 121편 요약</small></a>
-<a class="home-card internal" href="./knowledge/topics/"><strong>🧠 주제별 정리</strong><small>VLA · 월드모델 · 모방학습 · Sim2Real · RL</small></a>
-<a class="home-card internal" href="./knowledge/digests/"><strong>🗞️ 주간 다이제스트</strong><small>매주 업데이트하는 arXiv 트렌드</small></a>
-</div>
-
-## 실험과 기록
-
-<div class="home-grid">
-<a class="home-card internal" href="./lab/"><strong>🧪 실험실</strong><small>Isaac Sim · VLA · 월드모델 직접 실험</small></a>
-<a class="home-card internal" href="./open-questions"><strong>❓ 열린 질문</strong><small>실험하다가 생긴 연구 질문들</small></a>
-<a class="home-card internal" href="./roadmap/"><strong>🗺️ 로드맵</strong><small>진행 계획과 주간 회고</small></a>
-</div>
+<div class="mh-hero"><div class="mh-title">섭노트</div><div class="mh-sub">Physical AI 연구 노트 — 로봇 학습 · VLA · 월드모델</div></div>
+<div class="mh-section"><span>Featured</span></div>
+<div class="mh-featured"><a class="mh-card internal" href="/daily/"><div class="mh-cover mh-c1">☀️</div><div class="mh-body"><h3>데일리 인사이트</h3><p>매일 아침 자동 생성. 오늘의 기법 카드, 최신 arXiv 피지컬 AI 논문, 그리고 둘을 엮은 연구 아이디어 질문.</p><div class="mh-meta">매일 07:30 업데이트</div></div></a><a class="mh-card internal" href="/techniques/"><div class="mh-cover mh-c2">🧩</div><div class="mh-body"><h3>기법 사전</h3><p>Attention, LoRA, CLIP, DINO, Mamba, Flow Matching… 아이디어 구상에 필요한 방법론을 문제 → 핵심 아이디어 → 트레이드오프 → 아이디어 훅으로 정리.</p><div class="mh-meta">8개 분류 · 61개 기법</div></div></a></div>
+<div class="mh-section"><span>All Notes</span></div>
+<div class="mh-grid"><a class="mh-card internal" href="/knowledge/map"><div class="mh-cover mh-c3">📚</div><div class="mh-body"><h3>분야 지도</h3><p>대표 논문과 최신 논문의 계보. VLA, 월드모델, 모방학습이 어떻게 이어져 왔는지.</p><div class="mh-meta">지식 창고</div></div></a><a class="mh-card internal" href="/knowledge/venues/"><div class="mh-cover mh-c4">🏛️</div><div class="mh-body"><h3>학회별 논문</h3><p>탑티어 학회의 Physical AI 논문을 연도별로 모아 자동 요약하고 인용 관계로 연결.</p><div class="mh-meta">CVPR 2025 · 121편</div></div></a><a class="mh-card internal" href="/knowledge/topics/"><div class="mh-cover mh-c5">🧠</div><div class="mh-body"><h3>주제별 정리</h3><p>VLA · 월드모델 · 모방학습 · Sim2Real · RL. 주제마다 핵심 질문과 대표 논문.</p><div class="mh-meta">지식 창고</div></div></a><a class="mh-card internal" href="/knowledge/digests/"><div class="mh-cover mh-c6">🗞️</div><div class="mh-body"><h3>주간 다이제스트</h3><p>매주 arXiv에서 눈에 띈 피지컬 AI 논문과 트렌드 요약.</p><div class="mh-meta">매주 업데이트</div></div></a><a class="mh-card internal" href="/lab/"><div class="mh-cover mh-c7">🧪</div><div class="mh-body"><h3>실험실</h3><p>Isaac Sim, VLA, 월드모델을 직접 돌려 본 기록. 실패도 그대로 남긴다.</p><div class="mh-meta">실험 기록</div></div></a><a class="mh-card internal" href="/open-questions"><div class="mh-cover mh-c8">❓</div><div class="mh-body"><h3>열린 질문</h3><p>실험하고 논문 읽다가 생긴 연구 질문들. 다음 실험의 출발점.</p><div class="mh-meta">연구 질문</div></div></a><a class="mh-card internal" href="/roadmap/"><div class="mh-cover mh-c9">🗺️</div><div class="mh-body"><h3>로드맵</h3><p>진행 계획과 주간 회고.</p><div class="mh-meta">계획 · 회고</div></div></a></div>

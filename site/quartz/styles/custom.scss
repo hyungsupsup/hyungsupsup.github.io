@@ -12,269 +12,264 @@
   --headerFont: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
   --bodyFont: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
 }
-// 테마 플러그인 CSS가 뒤에 로드되며 변수를 덮어쓰므로 font-family를 직접 강제
 html body,
 html body *:not(pre):not(code):not(pre *):not(code *):not(kbd):not(.katex *) {
   font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
 }
 body { letter-spacing: -0.01em; }
 
-// [섭노트 custom] 좌우 사이드바 구분: 배경 톤 + 경계선
-@media all and not ($mobile) {
-  .page[data-frame="default"] .sidebar.left {
-    background: color-mix(in srgb, var(--gray) 12%, var(--light));
-    border-right: 1px solid var(--lightgray);
-  }
-}
-@media all and ($desktop) {
-  .page[data-frame="default"] .sidebar.right {
-    background: color-mix(in srgb, var(--gray) 12%, var(--light));
-    border-left: 1px solid var(--lightgray);
-  }
-}
-
-// put your custom CSS here!
-
 // ============================================================================
-// [섭노트 custom] 사이드바 열기/닫기 + 너비 조절
-// 동작: quartz/components/scripts/sidebar-controls.inline.ts
+// [섭노트 custom] Medium 스타일 레이아웃 (사이드바 없음, 상단 바)
+// 탭: quartz/components/scripts/topnav.inline.ts 가 .sidebar.left 안에 삽입
 // ============================================================================
+$sn-max: 1110px;
 
-:root {
-  --sb-left-w: #{$sidePanelWidth};
-  --sb-right-w: #{$sidePanelWidth};
-  --sb-left-eff: var(--sb-left-w);
-  --sb-right-eff: var(--sb-right-w);
+html, body, .page, .page[data-frame="default"] > #quartz-body,
+.page[data-frame="default"] .center {
+  background: var(--light) !important;
 }
-html.sb-left-collapsed {
-  --sb-left-eff: 0px;
-}
-html.sb-right-collapsed {
-  --sb-right-eff: 0px;
-}
+body { color: var(--dark); }
 
 .page[data-frame="default"] > #quartz-body {
-  transition: grid-template-columns 0.2s ease;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto auto !important;
+  grid-template-areas: "grid-sidebar-left" "grid-header" "grid-center" "grid-footer" !important;
+  column-gap: 0 !important;
+  row-gap: 0 !important;
+  width: 100% !important;
+  max-width: $sn-max !important;
+  margin: 0 auto !important;
+  padding: 0 1.5rem !important;
+  box-sizing: border-box;
 
-  @media all and ($desktop) {
-    grid-template-columns: var(--sb-left-eff) minmax(0, 1fr) var(--sb-right-eff);
-  }
-  @media all and ($tablet) {
-    grid-template-columns: var(--sb-left-eff) minmax(0, 1fr);
-  }
+  & .center { max-width: none !important; width: auto !important; min-width: 0; margin: 0 !important; padding: 0 !important; }
+  & .page-header { margin-top: 2.2rem !important; }
+  & .sidebar.right { display: none !important; }
 
-  // 너비 조절 핸들이 사이드바 기준으로 위치하도록 (static 모드 대비)
-  & .sidebar[data-sidebar-mode="static"] {
-    position: relative;
-  }
-}
-
-// 접힌 사이드바 숨기기 (모바일에서는 사이드바가 상단 가로줄이므로 제외)
-// display:none을 쓰면 본문이 빈 0px 칸으로 자동 배치되므로, 그리드 칸은 유지하고 내용만 숨긴다.
-@mixin sb-hidden {
-  visibility: hidden;
-  overflow: hidden;
-  padding-left: 0;
-  padding-right: 0;
-  min-width: 0;
-}
-@media all and not ($mobile) {
-  html.sb-left-collapsed .page[data-frame="default"] .sidebar.left {
-    @include sb-hidden;
-  }
-}
-@media all and ($desktop) {
-  html.sb-right-collapsed .page[data-frame="default"] .sidebar.right {
-    @include sb-hidden;
-  }
-}
-
-// 드래그 중: 애니메이션 끄고 텍스트 선택 방지
-html.sb-resizing {
-  cursor: col-resize;
-  user-select: none;
-  & .page[data-frame="default"] > #quartz-body {
-    transition: none;
-  }
-}
-
-// ---- 열기/닫기 버튼 ----
-.sb-toggle {
-  display: none;
-  position: fixed;
-  top: 0.75rem;
-  z-index: 20;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--lightgray);
-  border-radius: 6px;
-  background: var(--light);
-  color: var(--darkgray);
-  cursor: pointer;
-  opacity: 0.55;
-  transition:
-    opacity 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-
-  &:hover,
-  &:focus-visible {
-    opacity: 1;
-    color: var(--secondary);
-    border-color: var(--secondary);
-  }
-  &[aria-expanded="false"] {
-    opacity: 0.85;
-  }
-}
-.sb-toggle-left {
-  left: 0.75rem;
-  @media all and not ($mobile) {
-    display: flex;
-  }
-}
-.sb-toggle-right {
-  right: 0.75rem;
-  @media all and ($desktop) {
-    display: flex;
-  }
-}
-
-// ---- 너비 조절 핸들 ----
-.sb-resizer {
-  display: none;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  z-index: 5;
-  cursor: col-resize;
-  touch-action: none;
-
-  &::after {
-    content: "";
-    position: absolute;
+  // ---- 상단 바: 화면 전체 폭 흰 배경 + 얇은 경계선 ----
+  & .sidebar.left {
+    position: sticky !important;
     top: 0;
-    bottom: 0;
-    left: 3px;
-    width: 2px;
-    background: transparent;
-    transition: background 0.15s ease;
-  }
-  &:hover::after,
-  html.sb-resizing &::after {
-    background: var(--secondary);
-  }
-}
-.sidebar.left > .sb-resizer {
-  right: 0;
-  @media all and not ($mobile) {
-    display: block;
-  }
-}
-.sidebar.right > .sb-resizer {
-  left: 0;
-  @media all and ($desktop) {
-    display: block;
-  }
-}
-
-// ============================================================================
-// [섭노트 custom] 홈 화면
-// ============================================================================
-.home-hero {
-  padding: 0.5rem 0 1.5rem;
-  border-bottom: 1px solid var(--lightgray);
-  margin-bottom: 1.5rem;
-  & p { margin: 0.3rem 0; color: var(--darkgray); line-height: 1.7; }
-  & .home-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.9rem; }
-  & .home-tags span {
-    font-size: 0.8rem; padding: 0.2rem 0.65rem; border-radius: 999px;
-    background: var(--highlight); color: var(--secondary);
-  }
-}
-.home-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.8rem;
-  margin: 1rem 0 2rem;
-}
-a.home-card {
-  display: block;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--lightgray);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--gray) 8%, var(--light)) !important;
-  color: var(--dark) !important;
-  font-weight: normal !important;
-  text-decoration: none;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-  &:hover { border-color: var(--secondary); transform: translateY(-2px); background: var(--highlight) !important; }
-  & strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
-  & small { color: var(--gray); font-size: 0.82rem; line-height: 1.5; }
-}
-
-// ============================================================================
-// [섭노트 custom] 탐색기: 줄바꿈 방지 + 계층 구분
-// ============================================================================
-.explorer {
-  & .explorer-content ul { margin: 0; padding: 0; }
-  & li { margin: 0; list-style: none; }
-
-  // 항목: 한 줄 고정, 넘치면 …
-  & .nav-file-title,
-  & .folder-title,
-  & .folder-button {
-    display: block;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  & .folder-container {
-    display: flex;
+    height: 60px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.3rem;
-    min-width: 0;
-    padding: 0.28rem 0.4rem;
-    border-radius: 6px;
-    & > div { min-width: 0; flex: 1; }
-    &:hover { background: var(--highlight); }
-  }
-  & .folder-title { font-weight: 600; color: var(--dark); font-size: 0.95rem; }
-  & a.nav-file-title {
-    padding: 0.28rem 0.4rem 0.28rem 1.35rem;
-    border-radius: 6px;
-    font-size: 0.92rem;
-    color: var(--darkgray);
-    &:hover { background: var(--highlight); color: var(--secondary); }
-    &.active { color: var(--secondary); font-weight: 600; background: var(--highlight); }
-  }
+    gap: 1.5rem !important;
+    padding: 0 !important;
+    background: var(--light) !important;
+    border: none !important;
+    box-shadow: 0 0 0 100vmax var(--light);
+    clip-path: inset(0 -100vmax -12px -100vmax);
+    z-index: 10;
 
-  // 하위 레벨: 들여쓰기 + 세로 가이드선, 글자 한 단계 작게
-  & .folder-outer > ul.content {
-    margin-left: 0.85rem !important;
-    padding-left: 0.5rem !important;
-    border-left: 1px solid var(--lightgray);
-    & .folder-title { font-weight: 500; font-size: 0.9rem; color: var(--darkgray); }
-    & a.nav-file-title { font-size: 0.88rem; padding-left: 0.4rem; }
+    &::after {
+      content: "";
+      position: absolute;
+      left: -100vmax;
+      right: -100vmax;
+      bottom: 0;
+      height: 1px;
+      background: rgba(0, 0, 0, 0.07);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    & > * { order: 3; margin: 0 !important; }
+    & .page-title {
+      order: 0;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      & a { white-space: nowrap; color: var(--dark) !important; }
+    }
+    & .sn-topnav { order: 1; flex: 1 1 auto; justify-content: flex-end; min-width: 0; }
+    & .search { order: 2; flex: 0 0 auto; width: 160px; min-width: 0; }
   }
-}
-// 하위 항목이 없는 폴더는 화살표 숨김
-.explorer li:has(> .folder-outer > ul.content:empty) .folder-icon {
-  visibility: hidden;
-}
-.explorer .folder-outer > ul.content {
-  border-left-color: var(--gray) !important;
 }
 
-// 홈: 페이지 제목·날짜·읽기시간·프로퍼티 숨김
+.sn-topnav {
+  display: flex;
+  gap: 0.1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+
+  & a {
+    white-space: nowrap;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: rgba(0, 0, 0, 0.55) !important;
+    background: transparent !important;
+    text-decoration: none !important;
+    transition: color 0.15s ease;
+    &:hover { color: rgba(0, 0, 0, 0.9) !important; }
+    &.active { color: rgba(0, 0, 0, 0.9) !important; font-weight: 600; }
+  }
+}
+
+.sidebar.left .search .search-button {
+  background: #f4f4f4 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  height: 2.1rem;
+  color: var(--gray) !important;
+}
+
+// ---- 본문 타이포 ----
+.page[data-frame="default"] article {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  & h1, & h2, & h3 { letter-spacing: -0.02em; color: var(--dark); }
+}
+.article-title { font-size: 2.3rem !important; font-weight: 800 !important; letter-spacing: -0.03em; }
+a.internal:not(.mh-card) { background: transparent !important; color: var(--secondary) !important; }
+html body .sidebar.left .sn-topnav a.internal {
+  color: rgba(0, 0, 0, 0.55) !important;
+  &:hover, &.active { color: rgba(0, 0, 0, 0.9) !important; text-decoration: none; }
+}
+a.internal:hover { text-decoration: underline; }
+.tag-link {
+  background: #f3f3f3 !important;
+  color: var(--darkgray) !important;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem !important;
+}
+
+// ============================================================================
+// [섭노트 custom] 홈 (Mediumish 스타일)
+// ============================================================================
 body[data-slug="index"] {
   & .article-title,
   & .content-meta,
   & .note-properties,
-  & .breadcrumb-container { display: none !important; }
+  & .breadcrumb-container,
+  & .page-header { display: none !important; }
+}
+
+.mh-hero {
+  padding: 3rem 0 0.5rem;
+  & .mh-title { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; color: var(--dark); line-height: 1.1; }
+  & .mh-sub { margin-top: 0.6rem; font-size: 1.2rem; font-weight: 300; color: var(--darkgray); }
+}
+
+.mh-section {
+  margin: 2.6rem 0 1.6rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  & span {
+    display: inline-block;
+    padding-bottom: 1rem;
+    margin-bottom: -1px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.55);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+}
+
+.mh-featured {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.9rem;
+}
+.mh-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.9rem;
+  margin-bottom: 4rem;
+}
+@media all and (max-width: 1000px) {
+  .mh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media all and ($mobile) {
+  .mh-featured, .mh-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+a.mh-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff !important;
+  color: var(--dark) !important;
+  text-decoration: none !important;
+  font-weight: normal !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    & h3 { color: var(--secondary); }
+  }
+
+  & .mh-cover {
+    height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.6rem;
+  }
+  & .mh-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 1.25rem 1.3rem 1.1rem;
+  }
+  & h3 {
+    margin: 0 0 0.6rem !important;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--dark);
+    transition: color 0.15s ease;
+  }
+  & p {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 300;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.5);
+  }
+  & .mh-meta {
+    margin-top: auto;
+    padding-top: 1.2rem;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.45);
+  }
+}
+.mh-featured a.mh-card {
+  flex-direction: row;
+  min-height: 230px;
+  & .mh-cover { width: 40%; height: auto; flex: none; }
+}
+@media all and ($mobile) {
+  .mh-featured a.mh-card {
+    flex-direction: column;
+    & .mh-cover { width: auto; height: 150px; }
+  }
+}
+
+.mh-c1 { background: linear-gradient(135deg, #ffe29f, #ffa99f); }
+.mh-c2 { background: linear-gradient(135deg, #a1c4fd, #c2e9fb); }
+.mh-c3 { background: linear-gradient(135deg, #d4fc79, #96e6a1); }
+.mh-c4 { background: linear-gradient(135deg, #fbc2eb, #a6c1ee); }
+.mh-c5 { background: linear-gradient(135deg, #fddb92, #d1fdff); }
+.mh-c6 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+.mh-c7 { background: linear-gradient(135deg, #f6d365, #fda085); }
+.mh-c8 { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+.mh-c9 { background: linear-gradient(135deg, #cfd9df, #e2ebf0); }
+
+@media all and ($mobile) {
+  .page[data-frame="default"] > #quartz-body {
+    padding: 0 1rem !important;
+    & .sidebar.left {
+      height: auto !important;
+      flex-wrap: wrap;
+      gap: 0.3rem 1rem !important;
+      padding: 0.6rem 0 !important;
+      & .sn-topnav { order: 4; flex-basis: 100%; justify-content: flex-start; }
+      & .search { margin-left: auto !important; width: 120px; }
+    }
+  }
 }
