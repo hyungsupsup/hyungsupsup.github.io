@@ -12,18 +12,23 @@
   --headerFont: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
   --bodyFont: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
 }
+// 테마 플러그인 CSS가 뒤에 로드되며 변수를 덮어쓰므로 font-family를 직접 강제
+html body,
+html body *:not(pre):not(code):not(pre *):not(code *):not(kbd):not(.katex *) {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif !important;
+}
 body { letter-spacing: -0.01em; }
 
 // [섭노트 custom] 좌우 사이드바 구분: 배경 톤 + 경계선
 @media all and not ($mobile) {
   .page[data-frame="default"] .sidebar.left {
-    background: color-mix(in srgb, var(--lightgray) 25%, var(--light));
+    background: color-mix(in srgb, var(--gray) 12%, var(--light));
     border-right: 1px solid var(--lightgray);
   }
 }
 @media all and ($desktop) {
   .page[data-frame="default"] .sidebar.right {
-    background: color-mix(in srgb, var(--lightgray) 25%, var(--light));
+    background: color-mix(in srgb, var(--gray) 12%, var(--light));
     border-left: 1px solid var(--lightgray);
   }
 }
@@ -175,4 +180,39 @@ html.sb-resizing {
   @media all and ($desktop) {
     display: block;
   }
+}
+
+// ============================================================================
+// [섭노트 custom] 홈 화면
+// ============================================================================
+.home-hero {
+  padding: 0.5rem 0 1.5rem;
+  border-bottom: 1px solid var(--lightgray);
+  margin-bottom: 1.5rem;
+  & p { margin: 0.3rem 0; color: var(--darkgray); line-height: 1.7; }
+  & .home-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.9rem; }
+  & .home-tags span {
+    font-size: 0.8rem; padding: 0.2rem 0.65rem; border-radius: 999px;
+    background: var(--highlight); color: var(--secondary);
+  }
+}
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0 2rem;
+}
+a.home-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--lightgray);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--gray) 8%, var(--light)) !important;
+  color: var(--dark) !important;
+  font-weight: normal !important;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  &:hover { border-color: var(--secondary); transform: translateY(-2px); background: var(--highlight) !important; }
+  & strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
+  & small { color: var(--gray); font-size: 0.82rem; line-height: 1.5; }
 }
