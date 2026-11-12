@@ -299,3 +299,7 @@ a.mh-card {
     }
   }
 }
+
+// 이전 버전 스크립트가 남은 탭에서 탐색기·읽기모드 버튼이 다시 삽입되는 경우 대비
+.explorer, .explorer-toggle, .mobile-explorer, .readermode, .reader-mode,
+.sb-toggle, .sb-resizer, .graph, .toc, .backlinks { display: none !important; }
