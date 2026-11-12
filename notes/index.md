@@ -9,6 +9,13 @@ date: 2026-11-12
 <div class="home-tags"><span>Diffusion Policy</span><span>Flow-matching VLA</span><span>Video World Model</span><span>Embodied Agent</span></div>
 </div>
 
+## 매일
+
+<div class="home-grid">
+<a class="home-card internal" href="./daily/"><strong>☀️ 데일리 인사이트</strong><small>오늘의 기법 · 최신 논문 · 아이디어 질문</small></a>
+<a class="home-card internal" href="./techniques/"><strong>🧩 기법 사전</strong><small>Attention · LoRA · CLIP · Mamba · Flow Matching …</small></a>
+</div>
+
 ## 지식
 
 <div class="home-grid">
