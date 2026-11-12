@@ -3,7 +3,7 @@ title: 섭노트
 date: 2026-11-12
 ---
 
-<div class="mh-hero"><div class="mh-title">섭노트</div><div class="mh-sub">Physical AI 연구 노트 — 로봇 학습 · VLA · 월드모델</div></div>
+<div class="mh-hero"><div class="mh-sub">Physical AI 연구 노트 — 로봇 학습 · VLA · 월드모델</div></div>
 <div class="mh-section"><span>Featured</span></div>
 <div class="mh-featured"><a class="mh-card internal" href="/daily/"><div class="mh-cover mh-c1">☀️</div><div class="mh-body"><h3>데일리 인사이트</h3><p>매일 아침 자동 생성. 오늘의 기법 카드, 최신 arXiv 피지컬 AI 논문, 그리고 둘을 엮은 연구 아이디어 질문.</p><div class="mh-meta">매일 07:30 업데이트</div></div></a><a class="mh-card internal" href="/techniques/"><div class="mh-cover mh-c2">🧩</div><div class="mh-body"><h3>기법 사전</h3><p>Attention, LoRA, CLIP, DINO, Mamba, Flow Matching… 아이디어 구상에 필요한 방법론을 문제 → 핵심 아이디어 → 트레이드오프 → 아이디어 훅으로 정리.</p><div class="mh-meta">8개 분류 · 61개 기법</div></div></a></div>
 <div class="mh-section"><span>All Notes</span></div>
