@@ -216,3 +216,57 @@ a.home-card {
   & strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
   & small { color: var(--gray); font-size: 0.82rem; line-height: 1.5; }
 }
+
+// ============================================================================
+// [섭노트 custom] 탐색기: 줄바꿈 방지 + 계층 구분
+// ============================================================================
+.explorer {
+  & .explorer-content ul { margin: 0; padding: 0; }
+  & li { margin: 0; list-style: none; }
+
+  // 항목: 한 줄 고정, 넘치면 …
+  & .nav-file-title,
+  & .folder-title,
+  & .folder-button {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  & .folder-container {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 0.28rem 0.4rem;
+    border-radius: 6px;
+    & > div { min-width: 0; flex: 1; }
+    &:hover { background: var(--highlight); }
+  }
+  & .folder-title { font-weight: 600; color: var(--dark); font-size: 0.95rem; }
+  & a.nav-file-title {
+    padding: 0.28rem 0.4rem 0.28rem 1.35rem;
+    border-radius: 6px;
+    font-size: 0.92rem;
+    color: var(--darkgray);
+    &:hover { background: var(--highlight); color: var(--secondary); }
+    &.active { color: var(--secondary); font-weight: 600; background: var(--highlight); }
+  }
+
+  // 하위 레벨: 들여쓰기 + 세로 가이드선, 글자 한 단계 작게
+  & .folder-outer > ul.content {
+    margin-left: 0.85rem !important;
+    padding-left: 0.5rem !important;
+    border-left: 1px solid var(--lightgray);
+    & .folder-title { font-weight: 500; font-size: 0.9rem; color: var(--darkgray); }
+    & a.nav-file-title { font-size: 0.88rem; padding-left: 0.4rem; }
+  }
+}
+// 하위 항목이 없는 폴더는 화살표 숨김
+.explorer li:has(> .folder-outer > ul.content:empty) .folder-icon {
+  visibility: hidden;
+}
+.explorer .folder-outer > ul.content {
+  border-left-color: var(--gray) !important;
+}

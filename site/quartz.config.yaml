@@ -147,6 +147,11 @@ plugins:
     enabled: true
   - source: "@quartz-community/explorer"
     enabled: true
+    options:
+      folderClickBehavior: link
+      folderDefaultState: collapsed
+      # 세부 항목(개별 논문·데일리·카드)은 숨김: 폴더는 2단계까지, 파일은 최상위만
+      filterFn: "(node) => node.slugSegment !== 'tags' && (node.isFolder ? node.slugSegments.length <= 2 : node.slugSegments.length <= 1)"
     layout:
       position: left
       priority: 50
