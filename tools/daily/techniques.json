@@ -1,10 +1,82 @@
 {
-  "Attention·시퀀스": ["Scaled Dot-Product Attention", "Flash Attention", "Sparse Attention", "Linear Attention", "Dilated Attention", "Sliding Window Attention", "RoPE", "KV Cache", "Grouped-Query Attention"],
-  "시퀀스 대안": ["Mamba", "State Space Model (S4)", "RWKV"],
-  "생성모델": ["DDPM", "DDIM", "Score Matching", "Flow Matching", "Rectified Flow", "Consistency Model", "Classifier-Free Guidance", "Latent Diffusion", "VQ-VAE", "Autoregressive Transformer"],
-  "표현학습": ["CLIP", "SigLIP", "DINO", "DINOv2", "MAE", "JEPA", "Contrastive Learning (SimCLR)"],
-  "효율화·적응": ["LoRA", "QLoRA", "Adapter", "Prefix Tuning", "Knowledge Distillation", "Mixture of Experts", "Quantization"],
-  "아키텍처 모듈": ["Transformer", "ViT", "DiT", "U-Net", "FiLM", "Cross-Attention Conditioning", "Perceiver", "Q-Former", "ResNet", "Layer Normalization"],
-  "학습 기법": ["RLHF", "DPO", "PPO", "Behavior Cloning", "DAgger", "Offline RL", "Curriculum Learning"],
-  "로봇 특화": ["Action Chunking", "Diffusion Policy", "Action Tokenization (FAST)", "Co-training", "Domain Randomization", "Teleoperation Data Collection", "World Model (Dreamer)"]
+  "attention": {
+    "name": "Attention·시퀀스",
+    "emoji": "🎯",
+    "desc": "Transformer의 심장. attention 연산과 이를 길고 빠르게 만드는 방법들.",
+    "groups": {
+      "기본 연산": ["Scaled Dot-Product Attention", "Multi-Head Attention", "Cross-Attention Conditioning"],
+      "효율화": ["Flash Attention", "Sparse Attention", "Linear Attention", "Sliding Window Attention", "Dilated Attention", "Grouped-Query Attention"],
+      "위치·캐시": ["RoPE", "KV Cache"]
+    }
+  },
+  "sequence": {
+    "name": "시퀀스 대안",
+    "emoji": "🐍",
+    "desc": "attention 없이 긴 시퀀스를 다루는 recurrent / state space 계열.",
+    "groups": {
+      "State Space Model": ["State Space Model (S4)", "Mamba"],
+      "Recurrent": ["RWKV"]
+    }
+  },
+  "generative": {
+    "name": "생성모델",
+    "emoji": "🌫️",
+    "desc": "Diffusion, Flow Matching, 자기회귀. 로봇 정책과 월드모델의 생성 엔진.",
+    "groups": {
+      "Diffusion": ["DDPM", "DDIM", "Score Matching", "Latent Diffusion", "Classifier-Free Guidance"],
+      "Flow·Few-step": ["Flow Matching", "Rectified Flow", "Consistency Model"],
+      "Discrete·Autoregressive": ["VQ-VAE", "Autoregressive Transformer"]
+    }
+  },
+  "representation": {
+    "name": "표현학습",
+    "emoji": "👁️",
+    "desc": "라벨 없이 좋은 표현을 배우는 법. VLA의 비전 인코더가 여기서 나온다.",
+    "groups": {
+      "Vision-Language": ["CLIP", "SigLIP"],
+      "Self-Supervised Vision": ["DINO", "DINOv2", "MAE", "Contrastive Learning (SimCLR)"],
+      "Predictive": ["JEPA"]
+    }
+  },
+  "efficiency": {
+    "name": "효율화·적응",
+    "emoji": "⚡",
+    "desc": "큰 모델을 적은 자원으로 학습·적응·배포하는 기법.",
+    "groups": {
+      "Parameter-Efficient Fine-Tuning": ["LoRA", "QLoRA", "Adapter", "Prefix Tuning"],
+      "압축·경량화": ["Knowledge Distillation", "Quantization"],
+      "조건부 계산": ["Mixture of Experts"]
+    }
+  },
+  "architecture": {
+    "name": "아키텍처 모듈",
+    "emoji": "🧱",
+    "desc": "모델을 조립하는 기본 블록과 조건 주입 방법.",
+    "groups": {
+      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet"],
+      "조건 주입·연결": ["FiLM", "Perceiver", "Q-Former"],
+      "정규화": ["Layer Normalization"]
+    }
+  },
+  "training": {
+    "name": "학습 기법",
+    "emoji": "🎓",
+    "desc": "모방학습, 강화학습, 선호 학습. 정책을 어떻게 가르치는가.",
+    "groups": {
+      "모방학습": ["Behavior Cloning", "DAgger"],
+      "강화학습": ["PPO", "Offline RL"],
+      "선호 정렬": ["RLHF", "DPO"],
+      "학습 전략": ["Curriculum Learning"]
+    }
+  },
+  "robotics": {
+    "name": "로봇 특화",
+    "emoji": "🦾",
+    "desc": "로봇 정책·데이터·시뮬레이션에서 자주 쓰이는 기법.",
+    "groups": {
+      "Action 표현": ["Action Chunking", "Diffusion Policy", "Action Tokenization (FAST)"],
+      "데이터": ["Teleoperation Data Collection", "Co-training"],
+      "Sim2Real·월드모델": ["Domain Randomization", "World Model (Dreamer)"]
+    }
+  }
 }

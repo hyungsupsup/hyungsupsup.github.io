@@ -60,7 +60,12 @@ JSON 하나만 출력:
 
 
 def all_techniques() -> list[tuple[str, str]]:
-    return [(cat, t) for cat, items in CATALOG.items() for t in items]
+    """(카테고리 이름, 기법) 목록, 카탈로그 순서대로."""
+    return [(c["name"], t) for c in CATALOG.values() for items in c["groups"].values() for t in items]
+
+
+def cat_id_of(category_name: str) -> str:
+    return next((k for k, c in CATALOG.items() if c["name"] == category_name), "misc")
 
 
 def link_if_known(name: str) -> str:
@@ -79,7 +84,7 @@ def make_card(name: str, category: str) -> Path:
         f"""---
 title: {yaml_str(name)}
 date: {dt.date.today()}
-tags: [technique, {slugify(category) or 'misc'}]
+tags: [technique, {cat_id_of(category)}]
 category: {yaml_str(category)}
 status: draft
 ---
@@ -129,17 +134,96 @@ def next_technique() -> tuple[str, str] | None:
     return None
 
 
+def card_summary(slug: str) -> str:
+    p = TECH_DIR / f"{slug}.md"
+    if not p.exists():
+        return ""
+    m = re.search(r"^> (.*)$", p.read_text(encoding="utf-8"), re.M)
+    return m.group(1).strip() if m else ""
+
+
+def html_escape(x: str) -> str:
+    return x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def strip_math(x: str) -> str:
+    return re.sub(r"\$[^$]*\$", "…", x)
+
+
+COVERS = ["mh-c1", "mh-c2", "mh-c3", "mh-c4", "mh-c5", "mh-c6", "mh-c7", "mh-c8", "mh-c9"]
+
+
 def write_tech_index() -> None:
-    lines = ["---", "title: 기법 사전", f"date: {dt.date.today()}", "tags: [index]", "---", "",
-             "아이디어 구상용 AI 기법·모듈·모델 정리. 카드마다 **해결한 문제 → 핵심 아이디어 → 트레이드오프 → 계보 → 피지컬 AI 쓰임 → 💡 아이디어 훅**.",
-             "매일 1개씩 자동으로 초안이 추가된다 (✅ 작성됨 · ⬜ 예정).", ""]
-    for cat, items in CATALOG.items():
-        lines.append(f"## {cat}")
-        for t in items:
-            s = slugify(t)
-            lines.append(f"- ✅ [[techniques/{s}|{t}]]" if (TECH_DIR / f"{s}.md").exists() else f"- ⬜ {t}")
-        lines.append("")
-    (TECH_DIR / "index.md").write_text("\n".join(lines), encoding="utf-8")
+    """기법 사전 목차(카테고리 카드) + 카테고리별 페이지(세부 분류별 기법 카드) 생성."""
+    cat_dir = TECH_DIR / "category"
+    cat_dir.mkdir(parents=True, exist_ok=True)
+    today = dt.date.today()
+
+    total = done_total = 0
+    cards = []
+    for i, (cid, c) in enumerate(CATALOG.items()):
+        items = [t for g in c["groups"].values() for t in g]
+        done = sum((TECH_DIR / f"{slugify(t)}.md").exists() for t in items)
+        total += len(items)
+        done_total += done
+        preview = " · ".join(items[:5]) + (" …" if len(items) > 5 else "")
+        cards.append(
+            f'<a class="mh-card internal" href="/techniques/category/{cid}">'
+            f'<div class="mh-cover {COVERS[i % len(COVERS)]}">{c["emoji"]}</div>'
+            f'<div class="mh-body"><h3>{html_escape(c["name"])}</h3><p>{html_escape(c["desc"])}</p>'
+            f'<p class="mh-preview">{html_escape(preview)}</p>'
+            f'<div class="mh-meta">{len(c["groups"])}개 세부 분류 · {done}/{len(items)} 작성</div></div></a>'
+        )
+
+        # ---- 카테고리 페이지 ----
+        sections = []
+        for gname, techs in c["groups"].items():
+            tcards = []
+            for t in techs:
+                slug = slugify(t)
+                summ = strip_math(card_summary(slug))
+                if summ:
+                    tcards.append(
+                        f'<a class="tc-card internal" href="/techniques/{slug}"><h4>{html_escape(t)}</h4>'
+                        f'<p>{html_escape(summ)}</p><span class="tc-badge">초안</span></a>'
+                    )
+                else:
+                    tcards.append(
+                        f'<div class="tc-card tc-todo"><h4>{html_escape(t)}</h4>'
+                        f'<p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div>'
+                    )
+            sections.append(
+                f'<div class="mh-section"><span>{html_escape(gname)}</span></div>\n'
+                f'<div class="tc-grid">{"".join(tcards)}</div>'
+            )
+        (cat_dir / f"{cid}.md").write_text(
+            f"---\ntitle: {yaml_str(c['emoji'] + ' ' + c['name'])}\ndate: {today}\ntags: [technique-category]\n---\n\n"
+            f'<p class="tc-lead">{html_escape(c["desc"])}</p>\n'
+            + "\n".join(sections) + "\n\n[[techniques/index|← 기법 사전 전체]]\n",
+            encoding="utf-8",
+        )
+
+    (cat_dir / "index.md").write_text(
+        f"---
+title: 카테고리
+date: {today}
+tags: [index]
+---
+
+"
+        f'<div class="mh-grid">{"".join(cards)}</div>
+',
+        encoding="utf-8",
+    )
+    (TECH_DIR / "index.md").write_text(
+        f"---\ntitle: 기법 사전\ndate: {today}\ntags: [index]\n---\n\n"
+        f'<p class="tc-lead">아이디어 구상용 AI 기법·모듈·모델 정리. 카드마다 '
+        f"<b>해결한 문제 → 핵심 아이디어 → 트레이드오프 → 계보 → 피지컬 AI 쓰임 → 💡 아이디어 훅</b>. "
+        f"매일 1개씩 자동으로 초안이 추가된다 ({done_total}/{total} 작성).</p>\n"
+        f'<div class="mh-section"><span>카테고리</span></div>\n'
+        f'<div class="mh-grid">{"".join(cards)}</div>\n',
+        encoding="utf-8",
+    )
 
 
 # ---------------------------------------------------------------- arXiv
@@ -286,11 +370,14 @@ def main() -> None:
     s = sub.add_parser("serve"); s.add_argument("--at", default="07:30"); s.add_argument("--push", action="store_true")
     s.add_argument("--cards", type=int, default=1, help="하루에 만들 기법 카드 수")
     c = sub.add_parser("card"); c.add_argument("name"); c.add_argument("--category", default="기타")
+    sub.add_parser("index", help="기법 사전 목차·카테고리 페이지만 다시 생성")
     a = ap.parse_args()
     if a.cmd == "run":
         run_daily(dt.date.today(), a.push, a.cards)
     elif a.cmd == "serve":
         serve(a.at, a.push, a.cards)
+    elif a.cmd == "index":
+        write_tech_index()
     else:
         load_env()
         TECH_DIR.mkdir(parents=True, exist_ok=True)
