@@ -204,15 +204,8 @@ def write_tech_index() -> None:
         )
 
     (cat_dir / "index.md").write_text(
-        f"---
-title: 카테고리
-date: {today}
-tags: [index]
----
-
-"
-        f'<div class="mh-grid">{"".join(cards)}</div>
-',
+        f"---\ntitle: 카테고리\ndate: {today}\ntags: [index]\n---\n\n"
+        f'<div class="mh-grid">{"".join(cards)}</div>\n',
         encoding="utf-8",
     )
     (TECH_DIR / "index.md").write_text(
