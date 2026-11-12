@@ -30,3 +30,8 @@ lab/**/wandb/
 .obsidian/workspace*.json
 .DS_Store
 Thumbs.db
+
+# 비밀 설정
+.env
+
+.git-supnote/
