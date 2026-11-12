@@ -1,3 +1,150 @@
 @use "./variables.scss" as *;
 
 // put your custom CSS here!
+
+// ============================================================================
+// [섭노트 custom] 사이드바 열기/닫기 + 너비 조절
+// 동작: quartz/components/scripts/sidebar-controls.inline.ts
+// ============================================================================
+
+:root {
+  --sb-left-w: #{$sidePanelWidth};
+  --sb-right-w: #{$sidePanelWidth};
+  --sb-left-eff: var(--sb-left-w);
+  --sb-right-eff: var(--sb-right-w);
+}
+html.sb-left-collapsed {
+  --sb-left-eff: 0px;
+}
+html.sb-right-collapsed {
+  --sb-right-eff: 0px;
+}
+
+.page[data-frame="default"] > #quartz-body {
+  transition: grid-template-columns 0.2s ease;
+
+  @media all and ($desktop) {
+    grid-template-columns: var(--sb-left-eff) minmax(0, 1fr) var(--sb-right-eff);
+  }
+  @media all and ($tablet) {
+    grid-template-columns: var(--sb-left-eff) minmax(0, 1fr);
+  }
+
+  // 너비 조절 핸들이 사이드바 기준으로 위치하도록 (static 모드 대비)
+  & .sidebar[data-sidebar-mode="static"] {
+    position: relative;
+  }
+}
+
+// 접힌 사이드바 숨기기 (모바일에서는 사이드바가 상단 가로줄이므로 제외)
+// display:none을 쓰면 본문이 빈 0px 칸으로 자동 배치되므로, 그리드 칸은 유지하고 내용만 숨긴다.
+@mixin sb-hidden {
+  visibility: hidden;
+  overflow: hidden;
+  padding-left: 0;
+  padding-right: 0;
+  min-width: 0;
+}
+@media all and not ($mobile) {
+  html.sb-left-collapsed .page[data-frame="default"] .sidebar.left {
+    @include sb-hidden;
+  }
+}
+@media all and ($desktop) {
+  html.sb-right-collapsed .page[data-frame="default"] .sidebar.right {
+    @include sb-hidden;
+  }
+}
+
+// 드래그 중: 애니메이션 끄고 텍스트 선택 방지
+html.sb-resizing {
+  cursor: col-resize;
+  user-select: none;
+  & .page[data-frame="default"] > #quartz-body {
+    transition: none;
+  }
+}
+
+// ---- 열기/닫기 버튼 ----
+.sb-toggle {
+  display: none;
+  position: fixed;
+  top: 0.75rem;
+  z-index: 20;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  background: var(--light);
+  color: var(--darkgray);
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    color: var(--secondary);
+    border-color: var(--secondary);
+  }
+  &[aria-expanded="false"] {
+    opacity: 0.85;
+  }
+}
+.sb-toggle-left {
+  left: 0.75rem;
+  @media all and not ($mobile) {
+    display: flex;
+  }
+}
+.sb-toggle-right {
+  right: 0.75rem;
+  @media all and ($desktop) {
+    display: flex;
+  }
+}
+
+// ---- 너비 조절 핸들 ----
+.sb-resizer {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: transparent;
+    transition: background 0.15s ease;
+  }
+  &:hover::after,
+  html.sb-resizing &::after {
+    background: var(--secondary);
+  }
+}
+.sidebar.left > .sb-resizer {
+  right: 0;
+  @media all and not ($mobile) {
+    display: block;
+  }
+}
+.sidebar.right > .sb-resizer {
+  left: 0;
+  @media all and ($desktop) {
+    display: block;
+  }
+}

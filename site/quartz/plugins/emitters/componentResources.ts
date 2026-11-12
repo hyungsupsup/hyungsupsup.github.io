@@ -9,6 +9,11 @@ import spaRouterScript from "../../components/scripts/spa.inline"
 import popoverScript from "../../components/scripts/popover.inline"
 // @ts-ignore
 import prefetchScript from "../../components/scripts/prefetch.inline"
+// [섭노트 custom] sidebar toggle & resize
+// @ts-ignore
+import sidebarInitScript from "../../components/scripts/sidebar-init.inline"
+// @ts-ignore
+import sidebarControlsScript from "../../components/scripts/sidebar-controls.inline"
 import baseStyles from "../../styles/base.scss"
 import customStyles from "../../styles/custom.scss"
 import popoverStyle from "../../components/styles/popover.scss"
@@ -90,6 +95,10 @@ async function joinScripts(scripts: string[]): Promise<string> {
 
 function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentResources) {
   const cfg = ctx.cfg.configuration
+
+  // [섭노트 custom] sidebar toggle & resize
+  componentResources.beforeDOMLoaded.push(sidebarInitScript)
+  componentResources.afterDOMLoaded.push(sidebarControlsScript)
 
   // popovers
   if (cfg.enablePopovers) {
