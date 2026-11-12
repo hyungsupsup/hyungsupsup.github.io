@@ -24,6 +24,31 @@ body { letter-spacing: -0.01em; }
 // ============================================================================
 $sn-max: 1110px;
 
+:root {
+  --sn-text-strong: rgba(0, 0, 0, 0.9);
+  --sn-text-muted: rgba(0, 0, 0, 0.55);
+  --sn-text-faint: rgba(0, 0, 0, 0.45);
+  --sn-border: rgba(0, 0, 0, 0.125);
+  --sn-rule: rgba(0, 0, 0, 0.12);
+  --sn-rule-strong: rgba(0, 0, 0, 0.55);
+  --sn-card: #ffffff;
+  --sn-fill: #f4f4f4;
+  --sn-shadow: rgba(0, 0, 0, 0.08);
+}
+:root[saved-theme="dark"] {
+  --sn-text-strong: rgba(255, 255, 255, 0.92);
+  --sn-text-muted: rgba(255, 255, 255, 0.6);
+  --sn-text-faint: rgba(255, 255, 255, 0.45);
+  --sn-border: rgba(255, 255, 255, 0.1);
+  --sn-rule: rgba(255, 255, 255, 0.12);
+  --sn-rule-strong: rgba(255, 255, 255, 0.6);
+  --sn-card: #1e1e21;
+  --sn-fill: #26262a;
+  --sn-shadow: rgba(0, 0, 0, 0.4);
+}
+.mh-cover { filter: none; }
+:root[saved-theme="dark"] .mh-cover { filter: saturate(0.75) brightness(0.8); }
+
 html, body, .page, .page[data-frame="default"] > #quartz-body,
 .page[data-frame="default"] .center {
   background: var(--light) !important;
@@ -71,7 +96,7 @@ body { color: var(--dark); }
       right: -100vmax;
       bottom: 0;
       height: 1px;
-      background: rgba(0, 0, 0, 0.07);
+      background: var(--sn-rule);
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     }
 
@@ -85,6 +110,7 @@ body { color: var(--dark); }
     }
     & .sn-topnav { order: 1; flex: 1 1 auto; justify-content: flex-end; min-width: 0; }
     & .search { order: 2; flex: 0 0 auto; width: 160px; min-width: 0; }
+    & .darkmode { order: 3; flex: none; }
   }
 }
 
@@ -100,17 +126,17 @@ body { color: var(--dark); }
     padding: 0.4rem 0.75rem;
     font-size: 0.95rem;
     font-weight: 400;
-    color: rgba(0, 0, 0, 0.55) !important;
+    color: var(--sn-text-muted) !important;
     background: transparent !important;
     text-decoration: none !important;
     transition: color 0.15s ease;
-    &:hover { color: rgba(0, 0, 0, 0.9) !important; }
-    &.active { color: rgba(0, 0, 0, 0.9) !important; font-weight: 600; }
+    &:hover { color: var(--sn-text-strong) !important; }
+    &.active { color: var(--sn-text-strong) !important; font-weight: 600; }
   }
 }
 
 .sidebar.left .search .search-button {
-  background: #f4f4f4 !important;
+  background: var(--sn-fill) !important;
   border: none !important;
   border-radius: 999px !important;
   height: 2.1rem;
@@ -126,12 +152,12 @@ body { color: var(--dark); }
 .article-title { font-size: 2.3rem !important; font-weight: 800 !important; letter-spacing: -0.03em; }
 a.internal:not(.mh-card) { background: transparent !important; color: var(--secondary) !important; }
 html body .sidebar.left .sn-topnav a.internal {
-  color: rgba(0, 0, 0, 0.55) !important;
-  &:hover, &.active { color: rgba(0, 0, 0, 0.9) !important; text-decoration: none; }
+  color: var(--sn-text-muted) !important;
+  &:hover, &.active { color: var(--sn-text-strong) !important; text-decoration: none; }
 }
 a.internal:hover { text-decoration: underline; }
 .tag-link {
-  background: #f3f3f3 !important;
+  background: var(--sn-fill) !important;
   color: var(--darkgray) !important;
   border-radius: 999px;
   padding: 0.1rem 0.6rem !important;
@@ -156,12 +182,12 @@ body[data-slug="index"] {
 
 .mh-section {
   margin: 2.6rem 0 1.6rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: 1px solid var(--sn-rule);
   & span {
     display: inline-block;
     padding-bottom: 1rem;
     margin-bottom: -1px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.55);
+    border-bottom: 1px solid var(--sn-text-muted);
     font-size: 1.35rem;
     font-weight: 700;
     color: var(--dark);
@@ -189,16 +215,16 @@ body[data-slug="index"] {
 a.mh-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(0, 0, 0, 0.125);
+  border: 1px solid var(--sn-border);
   border-radius: 4px;
   overflow: hidden;
-  background: #fff !important;
+  background: var(--sn-card) !important;
   color: var(--dark) !important;
   text-decoration: none !important;
   font-weight: normal !important;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   &:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 24px var(--sn-shadow);
     transform: translateY(-2px);
     & h3 { color: var(--secondary); }
   }
@@ -229,13 +255,13 @@ a.mh-card {
     font-size: 0.95rem;
     font-weight: 300;
     line-height: 1.6;
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--sn-text-muted);
   }
   & .mh-meta {
     margin-top: auto;
     padding-top: 1.2rem;
     font-size: 0.8rem;
-    color: rgba(0, 0, 0, 0.45);
+    color: var(--sn-text-faint);
   }
 }
 .mh-featured a.mh-card {

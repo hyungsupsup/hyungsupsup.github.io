@@ -30,15 +30,15 @@ configuration:
         highlight: rgba(0, 171, 107, 0.08)
         textHighlight: "#fff23688"
       darkMode:
-        light: "#ffffff"
-        lightgray: "#ececec"
-        gray: "#9a9a9a"
-        darkgray: "#555555"
-        dark: "#1f1f1f"
-        secondary: "#00ab6b"
-        tertiary: "#00865a"
-        highlight: rgba(0, 171, 107, 0.08)
-        textHighlight: "#fff23688"
+        light: "#161618"
+        lightgray: "#2e2e31"
+        gray: "#7a7a7a"
+        darkgray: "#c4c4c4"
+        dark: "#ececec"
+        secondary: "#2ec98b"
+        tertiary: "#5fd6a4"
+        highlight: rgba(46, 201, 139, 0.12)
+        textHighlight: "#b3aa0288"
   links:
     markdownLinkResolution: shortest
   contentIndex:
@@ -194,7 +194,7 @@ plugins:
       position: left
       priority: 10
   - source: "@quartz-community/darkmode"
-    enabled: false
+    enabled: true
     layout:
       position: left
       priority: 30
