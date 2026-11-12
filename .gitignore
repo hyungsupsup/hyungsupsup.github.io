@@ -1,0 +1,32 @@
+# Python / 환경
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+install.log
+
+# 개인 메모
+private/
+CLAUDE.local.md
+
+# Quartz 빌드 산출물
+site/node_modules/
+site/public/
+site/.quartz-cache/
+
+# 실험 산출물 (용량 큼 — 필요한 그림만 notes/에 복사해서 공개)
+lab/**/data/
+lab/**/checkpoints/
+lab/**/outputs/
+lab/**/wandb/
+*.ckpt
+*.pt
+*.safetensors
+*.usd*
+!lab/**/assets/*.usd*
+
+# 기타
+.omc/
+.obsidian/workspace*.json
+.DS_Store
+Thumbs.db
