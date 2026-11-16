@@ -32,6 +32,7 @@ function renderTopnav() {
     a.href = "/" + (target && !target.includes("-") || target === "" ? target + (target ? "/" : "") : target)
     a.textContent = label
     a.className = "internal"
+    a.dataset.noPopover = "true"
     if (isActive(target, slug)) {
       a.classList.add("active")
       a.setAttribute("aria-current", "page")
