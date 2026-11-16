@@ -17,11 +17,13 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
 import time
 import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -241,8 +243,107 @@ def fetch_arxiv(n: int = 60) -> list[dict]:
     return out
 
 
-PICK_SYSTEM = """당신은 피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: diffusion/CV 석사 + LLM 에이전트 엔지니어.
-주어진 최신 arXiv 논문 목록에서 아이디어 구상에 가장 자극이 되는 논문 2편을 고르고, 기법 목록과 연결하라.
+def fetch_hf_daily_papers(limit: int = 30) -> list[dict]:
+    """Hugging Face Daily Papers에서 추천수 상위 AI/ML/CV/로봇 논문을 가져온다."""
+    raw = http_get("https://huggingface.co/api/daily_papers")
+    items = json.loads(raw)
+    out = []
+    for item in items:
+        p = item.get("paper") or {}
+        pid = p.get("id")
+        title = " ".join((p.get("title") or "").split())
+        abstract = " ".join((p.get("summary") or "").split())
+        if not pid or not title:
+            continue
+        out.append({
+            "id": pid,
+            "title": title,
+            "abstract": abstract,
+            "published": (p.get("publishedAt") or "")[:10],
+            "upvotes": item.get("upvotes") or p.get("upvotes") or 0,
+        })
+    out.sort(key=lambda x: x["upvotes"], reverse=True)
+    return out[:limit]
+
+
+def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
+    """alphaXiv MCP(Streamable HTTP)로 인기/최신 AI 논문을 가져온다. ALPHAXIV_API_KEY 필요."""
+    api_key = os.environ.get("ALPHAXIV_API_KEY", "").strip()
+    if not api_key:
+        log("ALPHAXIV_API_KEY 미설정 — alphaXiv 수집 건너뜀")
+        return []
+    payload = json.dumps({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "search_papers",
+            "arguments": {"query": "robotics VLA world model LLM computer vision", "limit": limit},
+        },
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.alphaxiv.org/mcp/v1",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        body = resp.read().decode("utf-8")
+    # Streamable HTTP는 SSE(data: {...}) 또는 일반 JSON으로 응답할 수 있음
+    data_line = next((ln[5:].strip() for ln in body.splitlines() if ln.startswith("data:")), body)
+    res = json.loads(data_line)
+    content = (res.get("result") or {}).get("content") or []
+    text = "\n".join(c.get("text", "") for c in content if isinstance(c, dict))
+    try:
+        items = json.loads(text)
+    except Exception:
+        return []
+    if isinstance(items, dict):
+        items = items.get("papers") or items.get("results") or []
+    out = []
+    for p in items:
+        pid = p.get("id") or p.get("arxiv_id") or p.get("paper_id")
+        title = " ".join((p.get("title") or "").split())
+        abstract = " ".join((p.get("abstract") or p.get("summary") or "").split())
+        if pid and title:
+            out.append({
+                "id": str(pid),
+                "title": title,
+                "abstract": abstract,
+                "published": (p.get("published") or p.get("publishedAt") or "")[:10],
+                "upvotes": p.get("upvotes") or p.get("votes") or 0,
+                "source": "alphaXiv",
+            })
+    return out[:limit]
+
+
+def fetch_papers() -> list[dict]:
+    """HF Daily Papers + alphaXiv 인기 논문을 합쳐서 반환, 모두 실패 시 arXiv 폴백."""
+    combined: dict[str, dict] = {}
+    try:
+        for p in fetch_hf_daily_papers():
+            p.setdefault("source", "HF")
+            combined[p["id"]] = p
+    except Exception as e:
+        log(f"HF Daily Papers 조회 실패: {e}")
+    try:
+        for p in fetch_alphaxiv_papers():
+            if p["id"] not in combined:
+                combined[p["id"]] = p
+    except Exception as e:
+        log(f"alphaXiv 조회 실패: {e}")
+    if combined:
+        return list(combined.values())
+    log("외부 인기 논문 조회 실패, arXiv로 폴백")
+    return fetch_arxiv()
+
+
+PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: diffusion/CV 석사 + LLM 에이전트 엔지니어.
+주어진 인기 논문 목록(추천수 상위)에서 피지컬 AI(로봇/VLA/월드모델)와 기초 분야(LLM/CV)를 균형 있게 섞어 가장 자극이 되는 논문 2~3편을 고르고, 기법 목록과 연결하라.
 한국어, 기술 용어는 영어. JSON만 출력:
 {"papers": [{"id": "arXiv id", "why": "왜 흥미로운가 1문장", "summary": "핵심 3문장", "techniques": ["기법 목록 중 관련된 이름"]}],
  "trend": "오늘 목록 전체에서 보이는 흐름 1~2문장",
@@ -271,9 +372,12 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
         tech_md = f"**[[techniques/{slugify(tech_name)}|{tech_name}]]** ({cat})\n\n> {one.group(1) if one else ''}"
     write_tech_index()
 
-    papers = fetch_arxiv()
-    log(f"arXiv {len(papers)}편 조회")
-    listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:500]}" for p in papers)
+    papers = fetch_papers()
+    log(f"인기 논문 {len(papers)}편 조회")
+    listing = "\n".join(
+        f"- {p['id']} (upvotes:{p.get('upvotes', '-')}) | {p['title']} | {p['abstract'][:500]}"
+        for p in papers
+    )
     names = ", ".join(t for _, t in all_techniques())
     j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n기법 목록: {names}\n\n논문:\n{listing}"))
     by_id = {p["id"]: p for p in papers}
