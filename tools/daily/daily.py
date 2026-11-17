@@ -1,10 +1,12 @@
 """매일 인사이트 생성기 + 기법 사전 자동 확장.
 
 하루 1회:
-  1. 기법 사전(techniques.json)에서 아직 카드가 없는 기법 1개 → notes/techniques/<slug>.md 카드 생성
-  2. 어제 arXiv(cs.RO 등) 피지컬 AI 논문 중 1~2편 선정·요약
-  3. "기법 × 문제" 조합 질문 1개
+  1. 기법 사전에서 아직 카드가 없는 기법 1개 → 기법 카드 생성
+  2. HF Daily Papers 추천수 Top 10 + alphaXiv Hot Top 10 → 입문자용 해설 카드
+  3. 논문 키워드 중 사전에 없는 기법은 엄격히 심사해 자동 추가 + 카드 생성
+  4. "기법 × 문제" 조합 질문 1개
   → notes/daily/YYYY-MM-DD.md, 인덱스 갱신, (옵션) git push
+  + 한 시간마다 alphaXiv 북마크 → 즐겨찾기 논문 (notes/knowledge/saved/)
 
 사용 (저장소 루트):
   python tools/daily/daily.py run                  # 오늘 것 1회 생성
@@ -12,6 +14,10 @@
   (--cards N: 하루에 기법 카드 N장)
   python tools/daily/daily.py card "LoRA"          # 특정 기법 카드만 생성
   python tools/daily/daily.py saved [--push]       # alphaXiv 북마크 → 즐겨찾기 논문 (serve 중엔 1시간마다 자동)
+  python tools/daily/daily.py export               # DB → notes/ md 다시 쓰기
+  python tools/daily/daily.py migrate              # (한 번) 예전 json/md 파일 → DB
+
+데이터 원본은 PostgreSQL(.env의 SUPNOTE_DB_*, 스키마 supnote). notes/의 md는 사이트용 렌더링 결과.
 """
 from __future__ import annotations
 
@@ -31,10 +37,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "paper-db"))
 from paperdb import ROOT, http_get, llm_chat, load_env, parse_json, yaml_str  # noqa: E402
 
+import db  # noqa: E402  (PostgreSQL 저장소, 같은 폴더)
+
 HERE = Path(__file__).resolve().parent
 TECH_DIR = ROOT / "notes" / "techniques"
 DAILY_DIR = ROOT / "notes" / "daily"
-CATALOG = json.loads((HERE / "techniques.json").read_text(encoding="utf-8"))
+load_env()
+# 기법 사전 원본은 DB. md 파일은 사이트용 렌더링 결과일 뿐이다.
+CATALOG: dict = db.load_catalog()
+
+
+def has_card(name_or_slug: str) -> bool:
+    return slugify(name_or_slug) in db.card_slugs()
 
 
 def slugify(name: str) -> str:
@@ -107,7 +121,7 @@ JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": true, "reason
 
 
 def add_new_techniques(keywords: list[str], max_new: int | None = None) -> list[str]:
-    """카탈로그에 없는 키워드를 LLM으로 엄격히 심사해 techniques.json에 추가하고 카드를 바로 만든다.
+    """카탈로그에 없는 키워드를 LLM으로 엄격히 심사해 DB 기법 사전에 추가하고 카드를 바로 만든다.
     max_new를 주면 그 수만큼만 카드를 만들고 나머지는 '오늘의 기법'으로 순서대로 채운다 (기본: 제한 없음)."""
     cand = []
     for k in keywords:
@@ -130,21 +144,11 @@ def add_new_techniques(keywords: list[str], max_new: int | None = None) -> list[
         if it.get("skip") or not name or cid not in CATALOG or known_technique(name):
             continue
         group = (it.get("group") or "기타").strip()
-        CATALOG[cid]["groups"].setdefault(group, []).append(name)
-        added.append((CATALOG[cid]["name"], name))
+        if db.add_technique(name, cid, group, origin="paper"):
+            CATALOG[cid]["groups"].setdefault(group, []).append(name)
+            added.append((CATALOG[cid]["name"], name))
     if not added:
         return []
-    (HERE / "techniques.json").write_text(
-        "{\n" + ",\n".join(
-            f'  {json.dumps(cid)}: {{\n    "name": {json.dumps(c["name"], ensure_ascii=False)},\n'
-            f'    "emoji": {json.dumps(c["emoji"], ensure_ascii=False)},\n    "desc": {json.dumps(c["desc"], ensure_ascii=False)},\n'
-            '    "groups": {\n' + ",\n".join(
-                f"      {json.dumps(g, ensure_ascii=False)}: {json.dumps(ts, ensure_ascii=False)}" for g, ts in c["groups"].items()
-            ) + "\n    }\n  }"
-            for cid, c in CATALOG.items()
-        ) + "\n}\n",
-        encoding="utf-8",
-    )
     log(f"기법 사전에 새 기법 {len(added)}개 추가: {', '.join(n for _, n in added)}")
     for cat, name in added[:max_new]:
         try:
@@ -159,7 +163,7 @@ def make_card(name: str, category: str) -> Path:
     j = parse_json(llm_chat(CARD_SYSTEM, f"기법: {name}\n분류: {category}"))
     bullets = lambda xs: "\n".join(f"- {x}" for x in xs) or "- (없음)"
     links = lambda xs: "\n".join(f"- {link_if_known(x)}" for x in xs) or "- (없음)"
-    path.write_text(
+    md = (
         f"""---
 title: {yaml_str(name)}
 date: {dt.date.today()}
@@ -199,25 +203,26 @@ status: draft
 
 ---
 *LLM 초안 — 직접 검토 후 `status: draft`를 지울 것.*
-""",
-        encoding="utf-8",
+"""
     )
+    db.save_card(slugify(name), name, category, j, md)
+    TECH_DIR.mkdir(parents=True, exist_ok=True)
+    path.write_text(md, encoding="utf-8")
     log(f"카드 생성: {path.relative_to(ROOT)}")
     return path
 
 
 def next_technique() -> tuple[str, str] | None:
+    done = db.card_slugs()
     for cat, t in all_techniques():
-        if not (TECH_DIR / f"{slugify(t)}.md").exists():
+        if slugify(t) not in done:
             return cat, t
     return None
 
 
 def card_summary(slug: str) -> str:
-    p = TECH_DIR / f"{slug}.md"
-    if not p.exists():
-        return ""
-    m = re.search(r"^> (.*)$", p.read_text(encoding="utf-8"), re.M)
+    md = db.card_markdown(slug)
+    m = re.search(r"^> (.*)$", md or "", re.M)
     return m.group(1).strip() if m else ""
 
 
@@ -240,9 +245,10 @@ def write_tech_index() -> None:
 
     total = done_total = 0
     cards = []
+    have = db.card_slugs()
     for i, (cid, c) in enumerate(CATALOG.items()):
         items = [t for g in c["groups"].values() for t in g]
-        done = sum((TECH_DIR / f"{slugify(t)}.md").exists() for t in items)
+        done = sum(slugify(t) in have for t in items)
         total += len(items)
         done_total += done
         preview = " · ".join(items[:5]) + (" …" if len(items) > 5 else "")
@@ -472,7 +478,7 @@ def explain_papers(papers: list[dict]) -> dict[str, dict]:
 
 def tech_link(name: str, new_techs=()) -> str:
     canon = known_technique(name)
-    if canon and (TECH_DIR / f"{slugify(canon)}.md").exists():
+    if canon and has_card(canon):
         new = " dp-new" if canon in new_techs else ""
         return f'<a class="internal dp-tech{new}" href="/techniques/{slugify(canon)}">{html_escape(name)}</a>'
     return f'<span class="dp-tech">{html_escape(name)}</span>'
@@ -509,12 +515,11 @@ def render_card(p: dict, pk: dict, badge: str = "", new_techs=(), saved: bool = 
 
 
 # ---------------------------------------------------------------- 즐겨찾기 (alphaXiv 북마크 동기화)
-SAVED_DB = HERE / "saved.json"
 SAVED_DIR = ROOT / "notes" / "knowledge" / "saved"
 
 
 def load_saved() -> dict[str, dict]:
-    return json.loads(SAVED_DB.read_text(encoding="utf-8")) if SAVED_DB.exists() else {}
+    return db.load_saved()
 
 
 def fetch_bookmarks() -> dict[str, list[str]] | None:
@@ -536,7 +541,7 @@ def fetch_bookmarks() -> dict[str, list[str]] | None:
 
 
 def sync_saved() -> bool:
-    """alphaXiv 북마크 ↔ saved.json 동기화 후 즐겨찾기 페이지 생성. 변경이 있었으면 True."""
+    """alphaXiv 북마크 ↔ DB(saved_papers) 동기화 후 즐겨찾기 페이지 생성. 변경이 있었으면 True."""
     load_env()
     try:
         marks = fetch_bookmarks()
@@ -545,17 +550,19 @@ def sync_saved() -> bool:
         return False
     if marks is None:
         return False
-    db = load_saved()
+    saved = load_saved()
     changed = False
-    for pid in [k for k in db if k not in marks]:  # alphaXiv에서 북마크를 지우면 여기서도 뺀다
-        log(f"즐겨찾기 해제: {db[pid]['title']}")
-        del db[pid]
+    for pid in [k for k in saved if k not in marks]:  # alphaXiv에서 북마크를 지우면 여기서도 뺀다
+        log(f"즐겨찾기 해제: {saved[pid]['title']}")
+        db.delete_saved(pid)
+        del saved[pid]
         changed = True
     for pid, folders in marks.items():
-        if pid in db and db[pid].get("folders") != folders:
-            db[pid]["folders"] = folders
+        if pid in saved and saved[pid].get("folders") != folders:
+            db.set_saved_folders(pid, folders)
+            saved[pid]["folders"] = folders
             changed = True
-    new_ids = [pid for pid in marks if pid not in db]
+    new_ids = [pid for pid in marks if pid not in saved]
     if new_ids:
         meta = arxiv_lookup(new_ids)
         papers = [meta[i] for i in new_ids if i in meta]
@@ -563,22 +570,22 @@ def sync_saved() -> bool:
         add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])])
         today = str(dt.date.today())
         for p in papers:
-            db[p["id"]] = dict(p, saved=today, folders=marks[p["id"]], note=notes.get(p["id"], {}))
+            saved[p["id"]] = dict(p, saved=today, folders=marks[p["id"]], note=notes.get(p["id"], {}))
+            db.upsert_saved(saved[p["id"]])
             log(f"즐겨찾기 추가: {p['title']}")
         changed = True
     if changed:
-        SAVED_DB.write_text(json.dumps(db, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         write_tech_index()
-    write_saved_pages(db)
+    write_saved_pages(saved)
     return changed
 
 
-def write_saved_pages(db: dict[str, dict] | None = None) -> None:
+def write_saved_pages(saved: dict[str, dict] | None = None) -> None:
     """즐겨찾기 목차(연-월 카드) + 월별 페이지(논문 카드) 생성."""
-    db = load_saved() if db is None else db
+    saved = load_saved() if saved is None else saved
     SAVED_DIR.mkdir(parents=True, exist_ok=True)
     by_month: dict[str, list[dict]] = {}
-    for p in db.values():
+    for p in saved.values():
         by_month.setdefault(p["saved"][:7], []).append(p)
     for old in SAVED_DIR.glob("????-??.md"):
         if old.stem not in by_month:
@@ -609,35 +616,33 @@ def write_saved_pages(db: dict[str, dict] | None = None) -> None:
     (SAVED_DIR / "index.md").write_text(
         f"---\ntitle: 즐겨찾기 논문\ndate: {today}\ntags: [index]\n---\n\n"
         '<p class="tc-lead">데일리에서 <b>☆ 담기</b>를 누르고 alphaXiv에서 북마크한 논문. '
-        f"한 시간마다 동기화되고, 북마크를 지우면 여기서도 빠집니다. 총 {len(db)}편.</p>\n"
+        f"한 시간마다 동기화되고, 북마크를 지우면 여기서도 빠집니다. 총 {len(saved)}편.</p>\n"
         '<div class="mh-section"><span>월별</span></div>\n' + body + "\n",
         encoding="utf-8",
     )
 
 
 # ---------------------------------------------------------------- daily
-GENERATING_MARK = "generating: true"
-
-
-def is_generating(path: Path) -> bool:
-    return path.exists() and GENERATING_MARK in path.read_text(encoding="utf-8")[:300]
+def is_generating(day: dt.date) -> bool:
+    return db.daily_status(day) == "generating"
 
 
 def write_daily_index(day: dt.date) -> None:
-    days = sorted((p.stem for p in DAILY_DIR.glob("????-??-??.md")), reverse=True)
-    item = lambda d: f"- [[daily/{d}|{d}]]" + (" — ⏳ 생성 중" if is_generating(DAILY_DIR / f"{d}.md") else "")
+    rows = db.daily_days()
+    item = lambda r: f"- [[daily/{r['day']}|{r['day']}]]" + (" — ⏳ 생성 중" if r["status"] == "generating" else "")
     (DAILY_DIR / "index.md").write_text(
         "---\ntitle: 데일리 인사이트\ndate: " + str(day) + "\ntags: [index]\n---\n\n"
         "매일 아침 자동 생성: 오늘의 기법 카드 · 인기 논문 해설(HF · alphaXiv) · 아이디어 질문.\n\n"
-        + "\n".join(item(d) for d in days) + "\n",
+        + "\n".join(item(r) for r in rows) + "\n",
         encoding="utf-8",
     )
 
 
 def write_placeholder(day: dt.date) -> None:
-    """생성 시작을 알리는 임시 페이지. 생성이 끝나면 실제 데일리로 덮어쓴다."""
+    """생성 시작을 DB에 기록하고, 사이트용 임시 페이지를 쓴다. 생성이 끝나면 실제 데일리로 덮어쓴다."""
+    db.start_daily(day)
     (DAILY_DIR / f"{day}.md").write_text(
-        f"---\ntitle: {day} 데일리\ndate: {day}\ntags: [daily]\n{GENERATING_MARK}\n---\n\n"
+        f"---\ntitle: {day} 데일리\ndate: {day}\ntags: [daily]\n---\n\n"
         '<div class="dp-wait"><div class="dp-spin"></div><div><b>오늘의 데일리를 만드는 중입니다</b>'
         f"<p>{dt.datetime.now():%H:%M}에 시작했어요. 논문 20편 해설과 기법 카드 생성에 보통 10~20분 걸립니다. "
         "잠시 후 새로고침해 주세요.</p></div></div>\n",
@@ -650,12 +655,12 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
     load_env()
     TECH_DIR.mkdir(parents=True, exist_ok=True)
     DAILY_DIR.mkdir(parents=True, exist_ok=True)
+    write_placeholder(day)
     if push:  # 사이트에 '생성 중' 표시를 먼저 올린다
-        write_placeholder(day)
         git_push(f"daily: {day} 생성 시작")
 
     nxt = next_technique()
-    tech_md = "기법 사전의 모든 항목이 작성됨 — `techniques.json`에 새 기법을 추가하세요."
+    tech_md = "기법 사전의 모든 항목이 작성됨 — 새 기법은 논문 키워드에서 자동으로 추가됩니다."
     tech_name = None
     for _ in range(cards - 1):  # 추가 카드 (데일리에는 첫 장만 소개)
         extra = next_technique()
@@ -703,7 +708,7 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
     ) if hf or ax else "(논문 조회 실패)"
 
     path = DAILY_DIR / f"{day}.md"
-    path.write_text(
+    md = (
         f"""---
 title: {day} 데일리
 date: {day}
@@ -725,9 +730,11 @@ tags: [daily]
 {j.get('question_note', '')}
 
 > 좋은 질문이면 [[open-questions]]로 옮기기.
-""",
-        encoding="utf-8",
+"""
     )
+    db.finish_daily(day, tech_name, j.get("trend", ""), j.get("question", ""), j.get("question_note", ""),
+                    md, hf + ax, notes)
+    path.write_text(md, encoding="utf-8")
     log(f"데일리 생성: {path.relative_to(ROOT)}")
 
     write_daily_index(day)
@@ -742,8 +749,7 @@ def git_push(msg: str) -> None:
         if r.returncode:
             log(f"[!] {' '.join(cmd)}: {r.stderr.strip()[:300]}")
         return r.returncode == 0
-    sh("git", "add", "notes/daily", "notes/techniques", "notes/knowledge/saved",
-       "tools/daily/techniques.json", "tools/daily/saved.json")
+    sh("git", "add", "notes/daily", "notes/techniques", "notes/knowledge/saved")
     sh("git", "commit", "-q", "-m", msg)
     if sh("git", "push", "-q"):
         log("공개 저장소 push 완료")
@@ -758,8 +764,7 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
         now = dt.datetime.now()
         today = now.date()
         due = now.time() >= dt.time(hh, mm)
-        path = DAILY_DIR / f"{today}.md"
-        if due and (not path.exists() or is_generating(path)):  # 생성 중 표시만 남은 채 실패했으면 재시도
+        if due and db.daily_status(today) != "done":  # 없거나 '생성 중'으로 남은 채 실패했으면 (재)시도
             try:
                 run_daily(today, push, cards)
             except Exception as e:  # 실패해도 프로세스는 유지, 10분 뒤 재시도
@@ -767,7 +772,7 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
                 time.sleep(600)
                 continue
         # 한 시간마다 alphaXiv 북마크 동기화 (데일리 생성 중에는 건너뜀)
-        if time.time() - last_sync >= 3600 and not is_generating(path):
+        if time.time() - last_sync >= 3600 and not is_generating(today):
             last_sync = time.time()
             try:
                 if sync_saved() and push:
@@ -775,6 +780,52 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
             except Exception as e:
                 log(f"[!] 즐겨찾기 동기화 실패: {e!r}")
         time.sleep(60)
+
+
+def migrate() -> None:
+    """예전 파일 저장소(techniques.json, saved.json, 기법 카드 md, 데일리 md) → DB. 여러 번 돌려도 안전."""
+    tj, sj = HERE / "techniques.json", HERE / "saved.json"
+    if tj.exists():
+        data = json.loads(tj.read_text(encoding="utf-8"))
+        for k, (cid, c) in enumerate(data.items()):
+            db.upsert_category(cid, c["name"], c.get("emoji", ""), c.get("desc", ""), k)
+            for g, ts in c["groups"].items():
+                for t in ts:
+                    db.add_technique(t, cid, g, origin="seed")
+    if sj.exists():
+        for p in json.loads(sj.read_text(encoding="utf-8")).values():
+            db.upsert_saved(p)
+    have = db.card_slugs()
+    for f in TECH_DIR.glob("*.md"):
+        if f.stem == "index" or f.stem in have:
+            continue
+        md = f.read_text(encoding="utf-8")
+        title = re.search(r"^title:\s*(.+)$", md, re.M)
+        cat = re.search(r"^category:\s*(.+)$", md, re.M)
+        db.save_card(f.stem, (title.group(1) if title else f.stem).strip().strip('"'),
+                     (cat.group(1) if cat else "").strip().strip('"'), None, md)
+    for f in DAILY_DIR.glob("????-??-??.md"):
+        db.import_daily_markdown(dt.date.fromisoformat(f.stem), f.read_text(encoding="utf-8"))
+    CATALOG.clear()
+    CATALOG.update(db.load_catalog())
+    log(f"DB 이관 완료: {db.counts()}")
+
+
+def export() -> None:
+    """DB → notes/ md 전부 다시 쓰기 (사이트용 렌더링)."""
+    TECH_DIR.mkdir(parents=True, exist_ok=True)
+    DAILY_DIR.mkdir(parents=True, exist_ok=True)
+    for r in db.all_cards():
+        (TECH_DIR / f"{r['slug']}.md").write_text(r["markdown"], encoding="utf-8")
+    rows = db.daily_days()
+    for r in rows:
+        if r["markdown"] and r["status"] == "done":
+            (DAILY_DIR / f"{r['day']}.md").write_text(r["markdown"], encoding="utf-8")
+    write_tech_index()
+    write_saved_pages()
+    if rows:
+        write_daily_index(rows[0]["day"])
+    log(f"md 내보내기 완료: {db.counts()}")
 
 
 def main() -> None:
@@ -786,8 +837,14 @@ def main() -> None:
     c = sub.add_parser("card"); c.add_argument("name"); c.add_argument("--category", default="기타")
     sub.add_parser("index", help="기법 사전 목차·카테고리 페이지만 다시 생성")
     sv = sub.add_parser("saved", help="alphaXiv 북마크 → 즐겨찾기 논문 동기화"); sv.add_argument("--push", action="store_true")
+    sub.add_parser("migrate", help="예전 json/md 파일 → DB 이관 (한 번)")
+    sub.add_parser("export", help="DB → notes/ md 다시 쓰기")
     a = ap.parse_args()
-    if a.cmd == "saved":
+    if a.cmd == "migrate":
+        migrate()
+    elif a.cmd == "export":
+        export()
+    elif a.cmd == "saved":
         if sync_saved() and a.push:
             git_push("saved: 즐겨찾기 동기화")
     elif a.cmd == "run":
