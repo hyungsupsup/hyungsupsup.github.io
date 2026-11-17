@@ -349,11 +349,26 @@ def fetch_papers(n: int = 10) -> tuple[list[dict], list[dict]]:
     return hf, ax
 
 
-PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: diffusion/CV 석사 + LLM 에이전트 엔지니어.
-주어진 인기 논문 **전부**(빠짐없이, 순서 그대로)를 요약하고 기법 목록과 연결하라. 논문을 고르거나 빼지 마라.
-한국어, 기술 용어는 영어. JSON만 출력:
-{"papers": [{"id": "주어진 id 그대로", "why": "왜 흥미로운가 1문장", "summary": "핵심 2~3문장", "techniques": ["기법 목록 중 관련된 이름"]}],
- "trend": "오늘 목록 전체에서 보이는 흐름 1~2문장",
+EXPLAIN_SYSTEM = """당신은 로보틱스·피지컬 AI **입문자**에게 오늘의 인기 논문을 풀어 설명한다.
+독자: 로봇·강화학습·제어는 거의 모름. 대신 LLM 에이전트(도구 호출, ReAct 루프, RAG)와 diffusion·컴퓨터 비전은 잘 앎.
+규칙:
+- 주어진 논문 **전부**를 빠짐없이 설명한다. 고르거나 빼지 않는다. 목록 자체에 대한 메타 코멘트 금지.
+- 전문용어는 처음 나올 때 괄호로 쉬운 설명을 붙인다. 예: task-specific policy(과제 하나만을 위해 따로 학습시킨 로봇 제어 모델).
+- 초록에 없는 수치·사실을 지어내지 않는다.
+- 한국어, 기술 용어는 영어 원문 유지. 수식 기호($) 쓰지 말 것.
+JSON만 출력:
+{"papers": [{"id": "주어진 id 그대로",
+  "oneline": "한 줄: 비유나 질문 형태로, 처음 보는 사람도 바로 감 잡게 (1문장)",
+  "background": "배경: 이 논문 전에는 보통 어떻게 했고 무엇이 불편/한계였나 (1~2문장)",
+  "claim": "이 논문의 주장: 무엇을 했고 결과가 어땠나, 용어는 괄호 설명 (2문장)",
+  "connect": "내가 아는 것과의 연결: LLM 에이전트·diffusion·CV 중 가장 가까운 개념에 빗대기 (1문장)",
+  "question": "생각해 볼 질문: 이 논문이 열어 둔 갈림길이나 후속 연구 아이디어 (1문장)",
+  "techniques": ["기법 목록 중 관련된 이름"]}]}"""
+
+
+PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: 로봇 입문자, LLM 에이전트·diffusion은 잘 앎.
+오늘의 논문 한 줄 요약들을 보고 전체 흐름과 연구 아이디어 질문을 써라. 한국어, 기술 용어는 영어. JSON만 출력:
+{"trend": "오늘 목록 전체에서 보이는 흐름 1~2문장",
  "question": "'기법 X × 문제 Y' 형태의 구체적 연구 아이디어 질문 1개 (오늘의 기법과 논문을 엮을 것)",
  "question_note": "그 질문이 왜 열려 있는지, 첫 실험은 무엇일지 2문장"}"""
 
@@ -381,45 +396,59 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
 
     hf, ax = fetch_papers()
     log(f"인기 논문 조회: HF {len(hf)}편, alphaXiv {len(ax)}편")
-    papers = hf + ax
-    listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:400]}" for p in papers)
+    # 두 출처에 같은 논문이 있으면 LLM에는 한 번만 보낸다 (화면에는 양쪽 열에 모두 표시)
+    uniq = list({p["id"]: p for p in hf + ax}.values())
     names = ", ".join(t for _, t in all_techniques())
-    j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n기법 목록: {names}\n\n논문:\n{listing}"))
-    notes = {str(pk.get("id")): pk for pk in j.get("papers", [])}
+    notes: dict[str, dict] = {}
+    for i in range(0, len(uniq), 5):  # 출력이 길어서 5편씩 나눠 요청
+        batch = uniq[i:i + 5]
+        listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:1200]}" for p in batch)
+        try:
+            jb = parse_json(llm_chat(EXPLAIN_SYSTEM, f"기법 목록: {names}\n\n논문:\n{listing}"))
+            notes.update({str(pk.get("id")): pk for pk in jb.get("papers", [])})
+        except Exception as e:
+            log(f"논문 해설 실패({i}~): {e}")
+    digest = "\n".join(f"- {p['title']}: {notes.get(p['id'], {}).get('oneline', '')}" for p in uniq)
+    j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n\n오늘의 논문:\n{digest}"))
 
     def tech_link(name: str) -> str:
         wl = link_if_known(name)
         m = re.match(r"\[\[(.+?)\|(.+?)\]\]", wl)
         return f'<a class="internal" href="/{m.group(1)}">{html_escape(m.group(2))}</a>' if m else html_escape(name)
 
+    esc = lambda x: html_escape(strip_math(str(x or "")))
+
     def paper_card(p: dict) -> str:
         pk = notes.get(p["id"], {})
-        summary = pk.get("summary") or p["abstract"][:300] + "…"
         techs = " ".join(f'<span class="dp-tech">{tech_link(t)}</span>' for t in pk.get("techniques", []))
         badge = f'▲ {p["upvotes"]}' if p["source"] == "HF" else (f'#{p["rank"]}' if p.get("rank") else "")
-        why = f'<p class="dp-why">{html_escape(strip_math(pk["why"]))}</p>' if pk.get("why") else ""
+        rows = [("배경", "background"), ("이 논문의 주장", "claim"), ("내가 아는 것과의 연결", "connect"), ("생각해 볼 질문", "question")]
+        body = "".join(f'<p class="dp-row"><b>{lab}</b> {esc(pk[k])}</p>' for lab, k in rows if pk.get(k))
+        if not pk:
+            body = f'<p class="dp-row">{esc(p["abstract"][:400])}…</p>'
+        one = f'<p class="dp-one">{esc(pk["oneline"])}</p>' if pk.get("oneline") else ""
         return (
             f'<div class="dp-card"><div class="dp-top"><span class="dp-badge">{badge}</span>'
             f'<span class="dp-id">arXiv:{p["id"]}</span></div>'
             f'<a class="dp-title external" href="https://arxiv.org/abs/{p["id"]}">{html_escape(p["title"])}</a>'
-            f'{why}<p class="dp-sum">{html_escape(strip_math(summary))}</p>'
-            f'<div class="dp-techs">{techs}</div></div>'
+            f'{one}{body}<div class="dp-techs">{techs}</div></div>'
         )
 
-    def section(cls: str, icon: str, name: str, sub: str, items: list[dict]) -> str:
-        if not items:
-            return ""
+    def column(cls: str, icon: str, name: str, sub: str, items: list[dict]) -> str:
+        cards_html = "".join(paper_card(p) for p in items) or '<p class="dp-row">오늘은 가져오지 못함</p>'
         return (
             f'<div class="dp-src {cls}"><div class="dp-head"><span class="dp-logo">{icon}</span>'
             f'<span class="dp-name">{name}</span><span class="dp-subt">{sub}</span></div>'
-            f'<div class="dp-grid">' + "".join(paper_card(p) for p in items) + "</div></div>\n"
+            f'<div class="dp-list">{cards_html}</div></div>'
         )
 
     hf_label = "Hugging Face Daily Papers" if not hf or hf[0]["source"] == "HF" else "arXiv 최신 (폴백)"
     papers_section = (
-        section("dp-hf", "🤗", hf_label, "추천수 순 Top 10", hf)
-        + section("dp-ax", "🔬", "alphaXiv Hot", "인기 순 Top 10", ax)
-    ) or "(논문 조회 실패)"
+        '<div class="dp-cols">'
+        + column("dp-hf", "🤗", hf_label, "추천수 순 Top 10", hf)
+        + column("dp-ax", "🔬", "alphaXiv Hot", "인기 순 Top 10", ax)
+        + "</div>\n"
+    ) if hf or ax else "(논문 조회 실패)"
 
     path = DAILY_DIR / f"{day}.md"
     path.write_text(

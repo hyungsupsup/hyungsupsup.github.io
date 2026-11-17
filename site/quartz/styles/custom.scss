@@ -469,8 +469,13 @@ body[data-slug="open-questions"] {
 .dp-logo { font-size: 1.3rem; }
 .dp-name { font-weight: 800; font-size: 1.15rem; color: var(--sn-text-strong); }
 .dp-subt { font-size: .82rem; color: var(--sn-text-muted); }
-.dp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
-@media (max-width: 800px) { .dp-grid { grid-template-columns: 1fr; } }
+.dp-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; margin: 1.2rem 0 2rem; }
+.dp-cols .dp-src { margin: 0; }
+@media (max-width: 900px) { .dp-cols { grid-template-columns: 1fr; } }
+.dp-list { display: flex; flex-direction: column; gap: .8rem; }
+.dp-one { font-weight: 700; color: var(--dp-accent) !important; font-size: .92rem !important; }
+.dp-row b { display: block; font-size: .74rem; color: var(--sn-text-strong); margin-bottom: .05rem; }
+.dp-row { color: var(--sn-text-muted); }
 .dp-card {
   background: var(--sn-card);
   border: 1px solid var(--sn-border);
