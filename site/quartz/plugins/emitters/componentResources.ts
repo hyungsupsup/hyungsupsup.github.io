@@ -12,6 +12,9 @@ import prefetchScript from "../../components/scripts/prefetch.inline"
 // [섭노트 custom] 상단 탭 내비게이션
 // @ts-ignore
 import topnavScript from "../../components/scripts/topnav.inline"
+// [섭노트 custom] 데일리 카드 ☆ 담기 → alphaXiv 북마크 (tools/save-worker)
+// @ts-ignore
+import saveScript from "../../components/scripts/save.inline"
 import baseStyles from "../../styles/base.scss"
 import customStyles from "../../styles/custom.scss"
 import popoverStyle from "../../components/styles/popover.scss"
@@ -96,6 +99,7 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
 
   // [섭노트 custom] 상단 탭 내비게이션
   componentResources.afterDOMLoaded.push(topnavScript)
+  componentResources.afterDOMLoaded.push(saveScript)
 
   // popovers
   if (cfg.enablePopovers) {

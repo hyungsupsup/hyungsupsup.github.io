@@ -1,0 +1,6 @@
+name = "supnote-save"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+# 비밀 값은 여기 쓰지 말고: npx wrangler@4 secret put ALPHAXIV_API_KEY / SAVE_TOKEN
