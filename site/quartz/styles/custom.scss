@@ -452,3 +452,44 @@ body[data-slug="open-questions"] {
     }
   }
 }
+
+/* ---------- 데일리: 출처별 논문 카드 ---------- */
+.dp-src {
+  margin: 1.4rem 0 2rem;
+  padding: 1.1rem 1.1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid var(--sn-border);
+  border-top: 4px solid var(--dp-accent);
+  background: color-mix(in srgb, var(--dp-accent) 5%, transparent);
+}
+.dp-hf { --dp-accent: #ff9d00; }
+.dp-ax { --dp-accent: #b31b1b; }
+:root[saved-theme="dark"] .dp-ax { --dp-accent: #e5534b; }
+.dp-head { display: flex; align-items: baseline; gap: .5rem; margin-bottom: .9rem; flex-wrap: wrap; }
+.dp-logo { font-size: 1.3rem; }
+.dp-name { font-weight: 800; font-size: 1.15rem; color: var(--sn-text-strong); }
+.dp-subt { font-size: .82rem; color: var(--sn-text-muted); }
+.dp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+@media (max-width: 800px) { .dp-grid { grid-template-columns: 1fr; } }
+.dp-card {
+  background: var(--sn-card);
+  border: 1px solid var(--sn-border);
+  border-radius: 10px;
+  padding: .85rem .95rem;
+  display: flex; flex-direction: column; gap: .35rem;
+  min-width: 0;
+}
+.dp-top { display: flex; justify-content: space-between; align-items: center; font-size: .75rem; }
+.dp-badge {
+  font-weight: 700; color: var(--dp-accent);
+  background: color-mix(in srgb, var(--dp-accent) 12%, transparent);
+  padding: .05rem .5rem; border-radius: 999px;
+}
+.dp-id { color: var(--sn-text-faint); font-family: ui-monospace, monospace; }
+a.dp-title { font-weight: 700; font-size: .98rem; line-height: 1.4; color: var(--sn-text-strong) !important; background: none !important; }
+a.dp-title:hover { color: var(--dp-accent) !important; }
+.dp-card p { margin: 0; font-size: .86rem; line-height: 1.55; }
+.dp-why { color: var(--dp-accent); font-weight: 600; }
+.dp-sum { color: var(--sn-text-muted); }
+.dp-techs { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: auto; padding-top: .2rem; }
+.dp-tech { font-size: .72rem; padding: .05rem .45rem; border-radius: 6px; background: var(--sn-fill); }

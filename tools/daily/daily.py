@@ -266,8 +266,8 @@ def fetch_hf_daily_papers(limit: int = 30) -> list[dict]:
     return out[:limit]
 
 
-def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
-    """alphaXiv MCP(Streamable HTTP)로 인기/최신 AI 논문을 가져온다. ALPHAXIV_API_KEY 필요."""
+def fetch_alphaxiv_papers(limit: int = 10) -> list[dict]:
+    """alphaXiv MCP(Streamable HTTP) hot feed 상위 논문을 인기 순서 그대로 가져온다. ALPHAXIV_API_KEY 필요."""
     api_key = os.environ.get("ALPHAXIV_API_KEY", "").strip()
     if not api_key:
         log("ALPHAXIV_API_KEY 미설정 — alphaXiv 수집 건너뜀")
@@ -278,7 +278,7 @@ def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
         "method": "tools/call",
         "params": {
             "name": "get_hot_feed",
-            "arguments": {"limit": limit},
+            "arguments": {"limit": limit * 2},  # 비-arXiv 슬러그를 거른 뒤에도 limit편이 남도록 여유 있게
         },
     }).encode("utf-8")
     req = urllib.request.Request(
@@ -313,45 +313,46 @@ def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
     # get_hot_feed는 ID만 반환하므로 arXiv API로 제목/초록을 일괄 조회
     url = "http://export.arxiv.org/api/query?" + urllib.parse.urlencode({"id_list": ",".join(ids), "max_results": len(ids)})
     root = ET.fromstring(http_get(url))
-    out = []
+    found = {}
     for e in root.findall("a:entry", NS):
-        pid = e.findtext("a:id", "", NS).rsplit("/", 1)[-1].split("v")[0]
-        out.append({
+        pid = re.sub(r"v\d+$", "", e.findtext("a:id", "", NS).rsplit("/", 1)[-1])
+        found[pid] = {
             "id": pid,
             "title": " ".join(e.findtext("a:title", "", NS).split()),
             "abstract": " ".join(e.findtext("a:summary", "", NS).split()),
             "published": e.findtext("a:published", "", NS)[:10],
-            "upvotes": "-",
             "source": "alphaXiv",
-        })
-    return out
+        }
+    # arXiv 응답 순서는 보장되지 않으므로 hot feed 순서(인기순)로 재정렬
+    out = [found[re.sub(r"v\d+$", "", i)] for i in ids if re.sub(r"v\d+$", "", i) in found]
+    for rank, p in enumerate(out[:limit], 1):
+        p["rank"] = rank
+    return out[:limit]
 
 
-def fetch_papers() -> list[dict]:
-    """HF Daily Papers + alphaXiv 인기 논문을 합쳐서 반환, 모두 실패 시 arXiv 폴백."""
-    combined: dict[str, dict] = {}
+def fetch_papers(n: int = 10) -> tuple[list[dict], list[dict]]:
+    """(HF 추천수 상위 n편, alphaXiv hot feed 상위 n편). 둘 다 실패하면 HF 자리에 arXiv 최신 논문."""
+    hf, ax = [], []
     try:
-        for p in fetch_hf_daily_papers():
-            p.setdefault("source", "HF")
-            combined[p["id"]] = p
+        hf = fetch_hf_daily_papers(limit=n)
+        for p in hf:
+            p["source"] = "HF"
     except Exception as e:
         log(f"HF Daily Papers 조회 실패: {e}")
     try:
-        for p in fetch_alphaxiv_papers():
-            if p["id"] not in combined:
-                combined[p["id"]] = p
+        ax = fetch_alphaxiv_papers(limit=n)
     except Exception as e:
         log(f"alphaXiv 조회 실패: {e}")
-    if combined:
-        return list(combined.values())
-    log("외부 인기 논문 조회 실패, arXiv로 폴백")
-    return fetch_arxiv()
+    if not hf and not ax:
+        log("외부 인기 논문 조회 실패, arXiv로 폴백")
+        hf = [dict(p, source="arXiv") for p in fetch_arxiv()[:n]]
+    return hf, ax
 
 
 PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: diffusion/CV 석사 + LLM 에이전트 엔지니어.
-주어진 인기 논문 목록에서 **HF(Hugging Face Daily Papers)에서 5편, alphaXiv에서 5편** (총 10편, 한쪽 소스가 부족하면 다른 소스에서 채움)을 피지컬 AI(로봇/VLA/월드모델)와 기초 분야(LLM/CV)가 균형 있게 섞이도록 고르고, 기법 목록과 연결하라.
+주어진 인기 논문 **전부**(빠짐없이, 순서 그대로)를 요약하고 기법 목록과 연결하라. 논문을 고르거나 빼지 마라.
 한국어, 기술 용어는 영어. JSON만 출력:
-{"papers": [{"id": "arXiv id", "why": "왜 흥미로운가 1문장", "summary": "핵심 3문장", "techniques": ["기법 목록 중 관련된 이름"]}],
+{"papers": [{"id": "주어진 id 그대로", "why": "왜 흥미로운가 1문장", "summary": "핵심 2~3문장", "techniques": ["기법 목록 중 관련된 이름"]}],
  "trend": "오늘 목록 전체에서 보이는 흐름 1~2문장",
  "question": "'기법 X × 문제 Y' 형태의 구체적 연구 아이디어 질문 1개 (오늘의 기법과 논문을 엮을 것)",
  "question_note": "그 질문이 왜 열려 있는지, 첫 실험은 무엇일지 2문장"}"""
@@ -378,40 +379,47 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
         tech_md = f"**[[techniques/{slugify(tech_name)}|{tech_name}]]** ({cat})\n\n> {one.group(1) if one else ''}"
     write_tech_index()
 
-    papers = fetch_papers()
-    log(f"인기 논문 {len(papers)}편 조회")
-    listing = "\n".join(
-        f"- [{p.get('source', 'arXiv')}] {p['id']} (upvotes:{p.get('upvotes', '-')}) | {p['title']} | {p['abstract'][:500]}"
-        for p in papers
-    )
+    hf, ax = fetch_papers()
+    log(f"인기 논문 조회: HF {len(hf)}편, alphaXiv {len(ax)}편")
+    papers = hf + ax
+    listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:400]}" for p in papers)
     names = ", ".join(t for _, t in all_techniques())
     j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n기법 목록: {names}\n\n논문:\n{listing}"))
-    by_id = {p["id"]: p for p in papers}
+    notes = {str(pk.get("id")): pk for pk in j.get("papers", [])}
 
-    hf_md, ax_md = [], []
-    for pk in j.get("papers", [])[:10]:
-        p = by_id.get(pk.get("id"), {})
-        src = p.get("source", "HF")
-        title = p.get("title", pk.get("id"))
-        techs = ", ".join(link_if_known(t) for t in pk.get("techniques", []))
-        block = (
-            f"#### [{title}](https://arxiv.org/abs/{pk.get('id')})\n"
-            f"> **왜 흥미로운가:** {pk.get('why', '')}\n\n"
-            f"{pk.get('summary', '')}\n\n"
-            f"**관련 기법:** {techs or '-'} · `arXiv:{pk.get('id')}`\n\n---"
+    def tech_link(name: str) -> str:
+        wl = link_if_known(name)
+        m = re.match(r"\[\[(.+?)\|(.+?)\]\]", wl)
+        return f'<a class="internal" href="/{m.group(1)}">{html_escape(m.group(2))}</a>' if m else html_escape(name)
+
+    def paper_card(p: dict) -> str:
+        pk = notes.get(p["id"], {})
+        summary = pk.get("summary") or p["abstract"][:300] + "…"
+        techs = " ".join(f'<span class="dp-tech">{tech_link(t)}</span>' for t in pk.get("techniques", []))
+        badge = f'▲ {p["upvotes"]}' if p["source"] == "HF" else (f'#{p["rank"]}' if p.get("rank") else "")
+        why = f'<p class="dp-why">{html_escape(strip_math(pk["why"]))}</p>' if pk.get("why") else ""
+        return (
+            f'<div class="dp-card"><div class="dp-top"><span class="dp-badge">{badge}</span>'
+            f'<span class="dp-id">arXiv:{p["id"]}</span></div>'
+            f'<a class="dp-title external" href="https://arxiv.org/abs/{p["id"]}">{html_escape(p["title"])}</a>'
+            f'{why}<p class="dp-sum">{html_escape(strip_math(summary))}</p>'
+            f'<div class="dp-techs">{techs}</div></div>'
         )
-        if src == "alphaXiv":
-            ax_md.append(block)
-        else:
-            hf_md.append(block)
 
-    papers_section = ""
-    if hf_md:
-        papers_section += "### 🤗 Hugging Face Daily Papers\n\n" + "\n\n".join(hf_md) + "\n\n"
-    if ax_md:
-        papers_section += "### 🔬 alphaXiv Hot Feed\n\n" + "\n\n".join(ax_md) + "\n\n"
-    if not papers_section:
-        papers_section = "(선정 실패)"
+    def section(cls: str, icon: str, name: str, sub: str, items: list[dict]) -> str:
+        if not items:
+            return ""
+        return (
+            f'<div class="dp-src {cls}"><div class="dp-head"><span class="dp-logo">{icon}</span>'
+            f'<span class="dp-name">{name}</span><span class="dp-subt">{sub}</span></div>'
+            f'<div class="dp-grid">' + "".join(paper_card(p) for p in items) + "</div></div>\n"
+        )
+
+    hf_label = "Hugging Face Daily Papers" if not hf or hf[0]["source"] == "HF" else "arXiv 최신 (폴백)"
+    papers_section = (
+        section("dp-hf", "🤗", hf_label, "추천수 순 Top 10", hf)
+        + section("dp-ax", "🔬", "alphaXiv Hot", "인기 순 Top 10", ax)
+    ) or "(논문 조회 실패)"
 
     path = DAILY_DIR / f"{day}.md"
     path.write_text(
