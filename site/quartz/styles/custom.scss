@@ -473,9 +473,15 @@ body[data-slug="open-questions"] {
 .dp-cols .dp-src { margin: 0; }
 @media (max-width: 900px) { .dp-cols { grid-template-columns: 1fr; } }
 .dp-list { display: flex; flex-direction: column; gap: .8rem; }
-.dp-one { font-weight: 700; color: var(--dp-accent) !important; font-size: .92rem !important; }
+.dp-row { display: flex; gap: .55rem; align-items: flex-start; color: var(--sn-text-muted); font-size: .86rem; line-height: 1.55; }
+.dp-row > div { min-width: 0; flex: 1; }
+.dp-ic { flex: 0 0 1.4rem; text-align: center; font-size: .95rem; line-height: 1.45; }
 .dp-row b { display: block; font-size: .74rem; color: var(--sn-text-strong); margin-bottom: .05rem; }
-.dp-row { color: var(--sn-text-muted); }
+.dp-one { font-weight: 700; color: var(--dp-accent); font-size: .92rem; }
+.dp-trow { margin-top: .1rem; }
+a.dp-tech { color: var(--secondary) !important; background: var(--sn-fill) !important; text-decoration: none; }
+a.dp-tech.dp-new { outline: 1px dashed var(--secondary); }
+a.dp-tech.dp-new::after { content: " NEW"; font-size: .6rem; font-weight: 800; }
 .dp-card {
   background: var(--sn-card);
   border: 1px solid var(--sn-border);

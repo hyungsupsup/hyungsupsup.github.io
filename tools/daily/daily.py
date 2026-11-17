@@ -77,6 +77,68 @@ def link_if_known(name: str) -> str:
     return f"[[techniques/{s}|{name}]]" if s else name
 
 
+def _norm(x: str) -> str:
+    return slugify(x).replace("-", "")
+
+
+def known_technique(name: str) -> str | None:
+    """카탈로그에 있으면 카탈로그상의 정식 이름을 반환 (대소문자·하이픈·괄호 차이 무시)."""
+    return {_norm(t): t for _, t in all_techniques()}.get(_norm(name))
+
+
+CLASSIFY_SYSTEM = """기법 사전에 새 항목을 분류한다. 각 키워드에 대해:
+- 논문 고유의 시스템·모델 이름이거나 너무 일반적인 단어(예: "Robotics", "Benchmark", "Deep Learning")면 skip: true.
+- 아니면 canonical 영어 이름(널리 쓰이는 표기), 카테고리 id(주어진 목록 중 하나), 세부 분류(기존 세부 분류 중 맞는 것, 없으면 새 이름 짧게)를 정한다.
+JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": false, "name": "canonical 이름", "category": "카테고리 id", "group": "세부 분류"}]}"""
+
+
+def add_new_techniques(keywords: list[str], max_new: int = 5) -> list[str]:
+    """카탈로그에 없는 키워드를 LLM으로 분류해 techniques.json에 추가하고 카드를 만든다.
+    하루 max_new개까지만 카드를 바로 만들고, 나머지는 카탈로그에만 추가해 이후 '오늘의 기법'으로 순서대로 채운다."""
+    cand = []
+    for k in keywords:
+        k = k.strip()
+        if k and not known_technique(k) and _norm(k) not in {_norm(c) for c in cand}:
+            cand.append(k)
+    if not cand:
+        return []
+    cats = {cid: {"name": c["name"], "groups": list(c["groups"])} for cid, c in CATALOG.items()}
+    try:
+        j = parse_json(llm_chat(CLASSIFY_SYSTEM, f"카테고리: {json.dumps(cats, ensure_ascii=False)}\n\n키워드: {json.dumps(cand, ensure_ascii=False)}"))
+    except Exception as e:
+        log(f"새 기법 분류 실패: {e}")
+        return []
+    added = []
+    for it in j.get("items", []):
+        name = (it.get("name") or "").strip()
+        cid = it.get("category")
+        if it.get("skip") or not name or cid not in CATALOG or known_technique(name):
+            continue
+        group = (it.get("group") or "기타").strip()
+        CATALOG[cid]["groups"].setdefault(group, []).append(name)
+        added.append((CATALOG[cid]["name"], name))
+    if not added:
+        return []
+    (HERE / "techniques.json").write_text(
+        "{\n" + ",\n".join(
+            f'  {json.dumps(cid)}: {{\n    "name": {json.dumps(c["name"], ensure_ascii=False)},\n'
+            f'    "emoji": {json.dumps(c["emoji"], ensure_ascii=False)},\n    "desc": {json.dumps(c["desc"], ensure_ascii=False)},\n'
+            '    "groups": {\n' + ",\n".join(
+                f"      {json.dumps(g, ensure_ascii=False)}: {json.dumps(ts, ensure_ascii=False)}" for g, ts in c["groups"].items()
+            ) + "\n    }\n  }"
+            for cid, c in CATALOG.items()
+        ) + "\n}\n",
+        encoding="utf-8",
+    )
+    log(f"기법 사전에 새 기법 {len(added)}개 추가: {', '.join(n for _, n in added)}")
+    for cat, name in added[:max_new]:
+        try:
+            make_card(name, cat)
+        except Exception as e:
+            log(f"카드 생성 실패 {name}: {e}")
+    return [n for _, n in added]
+
+
 def make_card(name: str, category: str) -> Path:
     path = TECH_DIR / f"{slugify(name)}.md"
     j = parse_json(llm_chat(CARD_SYSTEM, f"기법: {name}\n분류: {category}"))
@@ -363,7 +425,7 @@ JSON만 출력:
   "claim": "이 논문의 주장: 무엇을 했고 결과가 어땠나, 용어는 괄호 설명 (2문장)",
   "connect": "내가 아는 것과의 연결: LLM 에이전트·diffusion·CV 중 가장 가까운 개념에 빗대기 (1문장)",
   "question": "생각해 볼 질문: 이 논문이 열어 둔 갈림길이나 후속 연구 아이디어 (1문장)",
-  "techniques": ["기법 목록 중 관련된 이름"]}]}"""
+  "keywords": ["이 논문을 이해하는 데 핵심인 기법·모듈·방법론 2~4개. 널리 쓰이는 영어 정식 이름으로(예: Flow Matching, LoRA, Diffusion Policy). 기법 목록에 같은 것이 있으면 그 표기를 그대로. 논문 고유 시스템명·너무 일반적인 단어 제외"]}]}"""
 
 
 PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: 로봇 입문자, LLM 에이전트·diffusion은 잘 앎.
@@ -408,30 +470,45 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
             notes.update({str(pk.get("id")): pk for pk in jb.get("papers", [])})
         except Exception as e:
             log(f"논문 해설 실패({i}~): {e}")
+    # 논문 키워드 중 기법 사전에 없는 것은 자동 추가 + 카드 생성
+    new_techs = add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])])
+    write_tech_index()
     digest = "\n".join(f"- {p['title']}: {notes.get(p['id'], {}).get('oneline', '')}" for p in uniq)
     j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n\n오늘의 논문:\n{digest}"))
 
     def tech_link(name: str) -> str:
-        wl = link_if_known(name)
-        m = re.match(r"\[\[(.+?)\|(.+?)\]\]", wl)
-        return f'<a class="internal" href="/{m.group(1)}">{html_escape(m.group(2))}</a>' if m else html_escape(name)
+        canon = known_technique(name)
+        if canon and (TECH_DIR / f"{slugify(canon)}.md").exists():
+            new = " dp-new" if canon in new_techs else ""
+            return f'<a class="internal dp-tech{new}" href="/techniques/{slugify(canon)}">{html_escape(name)}</a>'
+        return f'<span class="dp-tech">{html_escape(name)}</span>'
 
     esc = lambda x: html_escape(strip_math(str(x or "")))
 
     def paper_card(p: dict) -> str:
         pk = notes.get(p["id"], {})
-        techs = " ".join(f'<span class="dp-tech">{tech_link(t)}</span>' for t in pk.get("techniques", []))
+        techs = " ".join(tech_link(t) for t in pk.get("keywords", []))
         badge = f'▲ {p["upvotes"]}' if p["source"] == "HF" else (f'#{p["rank"]}' if p.get("rank") else "")
-        rows = [("배경", "background"), ("이 논문의 주장", "claim"), ("내가 아는 것과의 연결", "connect"), ("생각해 볼 질문", "question")]
-        body = "".join(f'<p class="dp-row"><b>{lab}</b> {esc(pk[k])}</p>' for lab, k in rows if pk.get(k))
+
+        def row(icon: str, label: str, text: str, cls: str = "") -> str:
+            lab = f"<b>{label}</b>" if label else ""
+            return f'<div class="dp-row {cls}"><span class="dp-ic">{icon}</span><div>{lab}{text}</div></div>'
+
+        title = f'<a class="dp-title external" href="https://arxiv.org/abs/{p["id"]}">{html_escape(p["title"])}</a>'
+        parts = [row("📄", "", title, "dp-trow")]
+        if pk.get("oneline"):
+            parts.append(row("💡", "", esc(pk["oneline"]), "dp-one"))
+        for icon, label, k in [("🕰️", "배경", "background"), ("🎯", "이 논문의 주장", "claim"),
+                               ("🔗", "내가 아는 것과의 연결", "connect"), ("❓", "생각해 볼 질문", "question")]:
+            if pk.get(k):
+                parts.append(row(icon, label, esc(pk[k])))
         if not pk:
-            body = f'<p class="dp-row">{esc(p["abstract"][:400])}…</p>'
-        one = f'<p class="dp-one">{esc(pk["oneline"])}</p>' if pk.get("oneline") else ""
+            parts.append(row("📝", "초록", esc(p["abstract"][:400]) + "…"))
+        if techs:
+            parts.append(row("🏷️", "", f'<div class="dp-techs">{techs}</div>'))
         return (
             f'<div class="dp-card"><div class="dp-top"><span class="dp-badge">{badge}</span>'
-            f'<span class="dp-id">arXiv:{p["id"]}</span></div>'
-            f'<a class="dp-title external" href="https://arxiv.org/abs/{p["id"]}">{html_escape(p["title"])}</a>'
-            f'{one}{body}<div class="dp-techs">{techs}</div></div>'
+            f'<span class="dp-id">arXiv:{p["id"]}</span></div>' + "".join(parts) + "</div>"
         )
 
     def column(cls: str, icon: str, name: str, sub: str, items: list[dict]) -> str:

@@ -23,7 +23,7 @@
     "emoji": "🌫️",
     "desc": "Diffusion, Flow Matching, 자기회귀. 로봇 정책과 월드모델의 생성 엔진.",
     "groups": {
-      "Diffusion": ["DDPM", "DDIM", "Score Matching", "Latent Diffusion", "Classifier-Free Guidance"],
+      "Diffusion": ["DDPM", "DDIM", "Score Matching", "Latent Diffusion", "Classifier-Free Guidance", "Diffusion Language Model"],
       "Flow·Few-step": ["Flow Matching", "Rectified Flow", "Consistency Model"],
       "Discrete·Autoregressive": ["VQ-VAE", "Autoregressive Transformer"]
     }
@@ -45,7 +45,7 @@
     "groups": {
       "Parameter-Efficient Fine-Tuning": ["LoRA", "QLoRA", "Adapter", "Prefix Tuning"],
       "압축·경량화": ["Knowledge Distillation", "Quantization"],
-      "조건부 계산": ["Mixture of Experts"]
+      "조건부 계산": ["Mixture of Experts", "Token Pruning"]
     }
   },
   "architecture": {
@@ -53,7 +53,7 @@
     "emoji": "🧱",
     "desc": "모델을 조립하는 기본 블록과 조건 주입 방법.",
     "groups": {
-      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet"],
+      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet", "Visual Encoder"],
       "조건 주입·연결": ["FiLM", "Perceiver", "Q-Former"],
       "정규화": ["Layer Normalization"]
     }
@@ -66,7 +66,7 @@
       "모방학습": ["Behavior Cloning", "DAgger"],
       "강화학습": ["PPO", "Offline RL"],
       "선호 정렬": ["RLHF", "DPO"],
-      "학습 전략": ["Curriculum Learning"]
+      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Coreset Selection"]
     }
   },
   "robotics": {
@@ -74,9 +74,9 @@
     "emoji": "🦾",
     "desc": "로봇 정책·데이터·시뮬레이션에서 자주 쓰이는 기법.",
     "groups": {
-      "Action 표현": ["Action Chunking", "Diffusion Policy", "Action Tokenization (FAST)"],
-      "데이터": ["Teleoperation Data Collection", "Co-training"],
-      "Sim2Real·월드모델": ["Domain Randomization", "World Model (Dreamer)"]
+      "Action 표현": ["Action Chunking", "Diffusion Policy", "Action Tokenization (FAST)", "Motion Retargeting"],
+      "데이터": ["Teleoperation Data Collection", "Co-training", "Egocentric Recording"],
+      "Sim2Real·월드모델": ["Domain Randomization", "World Model (Dreamer)", "Sim-to-Real Transfer", "Interactive Simulation"]
     }
   }
 }
