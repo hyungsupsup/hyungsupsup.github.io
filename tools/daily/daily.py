@@ -277,8 +277,8 @@ def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
         "id": 1,
         "method": "tools/call",
         "params": {
-            "name": "search_papers",
-            "arguments": {"query": "robotics VLA world model LLM computer vision", "limit": limit},
+            "name": "get_hot_feed",
+            "arguments": {"limit": limit},
         },
     }).encode("utf-8")
     req = urllib.request.Request(
@@ -288,6 +288,7 @@ def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
             "Authorization": f"Bearer {api_key}",
+            "User-Agent": "Mozilla/5.0",
         },
         method="POST",
     )
@@ -304,21 +305,26 @@ def fetch_alphaxiv_papers(limit: int = 20) -> list[dict]:
         return []
     if isinstance(items, dict):
         items = items.get("papers") or items.get("results") or []
+    ids = [str(p.get("universal_paper_id") or p.get("id") or p.get("arxiv_id") or "") for p in items]
+    # alphaXiv 자체 논문 슬러그(예: 2611.weight-space-...)가 섞이면 arXiv API가 400을 반환하므로 걸러냄
+    ids = [i for i in ids if re.fullmatch(r"\d{4}\.\d{4,5}(v\d+)?", i)][:limit]
+    if not ids:
+        return []
+    # get_hot_feed는 ID만 반환하므로 arXiv API로 제목/초록을 일괄 조회
+    url = "http://export.arxiv.org/api/query?" + urllib.parse.urlencode({"id_list": ",".join(ids), "max_results": len(ids)})
+    root = ET.fromstring(http_get(url))
     out = []
-    for p in items:
-        pid = p.get("id") or p.get("arxiv_id") or p.get("paper_id")
-        title = " ".join((p.get("title") or "").split())
-        abstract = " ".join((p.get("abstract") or p.get("summary") or "").split())
-        if pid and title:
-            out.append({
-                "id": str(pid),
-                "title": title,
-                "abstract": abstract,
-                "published": (p.get("published") or p.get("publishedAt") or "")[:10],
-                "upvotes": p.get("upvotes") or p.get("votes") or 0,
-                "source": "alphaXiv",
-            })
-    return out[:limit]
+    for e in root.findall("a:entry", NS):
+        pid = e.findtext("a:id", "", NS).rsplit("/", 1)[-1].split("v")[0]
+        out.append({
+            "id": pid,
+            "title": " ".join(e.findtext("a:title", "", NS).split()),
+            "abstract": " ".join(e.findtext("a:summary", "", NS).split()),
+            "published": e.findtext("a:published", "", NS)[:10],
+            "upvotes": "-",
+            "source": "alphaXiv",
+        })
+    return out
 
 
 def fetch_papers() -> list[dict]:
@@ -343,7 +349,7 @@ def fetch_papers() -> list[dict]:
 
 
 PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴다. 독자: diffusion/CV 석사 + LLM 에이전트 엔지니어.
-주어진 인기 논문 목록(추천수 상위)에서 피지컬 AI(로봇/VLA/월드모델)와 기초 분야(LLM/CV)를 균형 있게 섞어 가장 자극이 되는 논문 2~3편을 고르고, 기법 목록과 연결하라.
+주어진 인기 논문 목록에서 **HF(Hugging Face Daily Papers)에서 5편, alphaXiv에서 5편** (총 10편, 한쪽 소스가 부족하면 다른 소스에서 채움)을 피지컬 AI(로봇/VLA/월드모델)와 기초 분야(LLM/CV)가 균형 있게 섞이도록 고르고, 기법 목록과 연결하라.
 한국어, 기술 용어는 영어. JSON만 출력:
 {"papers": [{"id": "arXiv id", "why": "왜 흥미로운가 1문장", "summary": "핵심 3문장", "techniques": ["기법 목록 중 관련된 이름"]}],
  "trend": "오늘 목록 전체에서 보이는 흐름 1~2문장",
@@ -375,20 +381,37 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
     papers = fetch_papers()
     log(f"인기 논문 {len(papers)}편 조회")
     listing = "\n".join(
-        f"- {p['id']} (upvotes:{p.get('upvotes', '-')}) | {p['title']} | {p['abstract'][:500]}"
+        f"- [{p.get('source', 'arXiv')}] {p['id']} (upvotes:{p.get('upvotes', '-')}) | {p['title']} | {p['abstract'][:500]}"
         for p in papers
     )
     names = ", ".join(t for _, t in all_techniques())
     j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n기법 목록: {names}\n\n논문:\n{listing}"))
     by_id = {p["id"]: p for p in papers}
 
-    paper_md = []
-    for pk in j.get("papers", [])[:2]:
+    hf_md, ax_md = [], []
+    for pk in j.get("papers", [])[:10]:
         p = by_id.get(pk.get("id"), {})
+        src = p.get("source", "HF")
         title = p.get("title", pk.get("id"))
         techs = ", ".join(link_if_known(t) for t in pk.get("techniques", []))
-        paper_md.append(f"### [{title}](https://arxiv.org/abs/{pk.get('id')})\n"
-                        f"*{pk.get('why', '')}*\n\n{pk.get('summary', '')}\n\n관련 기법: {techs or '-'}\n")
+        block = (
+            f"#### [{title}](https://arxiv.org/abs/{pk.get('id')})\n"
+            f"> **왜 흥미로운가:** {pk.get('why', '')}\n\n"
+            f"{pk.get('summary', '')}\n\n"
+            f"**관련 기법:** {techs or '-'} · `arXiv:{pk.get('id')}`\n\n---"
+        )
+        if src == "alphaXiv":
+            ax_md.append(block)
+        else:
+            hf_md.append(block)
+
+    papers_section = ""
+    if hf_md:
+        papers_section += "### 🤗 Hugging Face Daily Papers\n\n" + "\n\n".join(hf_md) + "\n\n"
+    if ax_md:
+        papers_section += "### 🔬 alphaXiv Hot Feed\n\n" + "\n\n".join(ax_md) + "\n\n"
+    if not papers_section:
+        papers_section = "(선정 실패)"
 
     path = DAILY_DIR / f"{day}.md"
     path.write_text(
@@ -402,7 +425,7 @@ tags: [daily]
 {tech_md}
 
 ## 📄 오늘의 논문
-{chr(10).join(paper_md) or '(선정 실패)'}
+{papers_section}
 
 ## 📈 흐름
 {j.get('trend', '')}
