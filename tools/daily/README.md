@@ -4,7 +4,7 @@
 
 ```powershell
 python tools/daily/daily.py run                          # 오늘 것 1회 생성
-python tools/daily/daily.py serve --at 07:30 --push      # 상주: 매일 07:30 생성 후 push
+python tools/daily/daily.py serve --at 07:30 --push      # 상주: 매일 07:30 생성 후 push ('생성 중' 페이지를 먼저 올림)
 python tools/daily/daily.py serve --at 07:30 --push --cards 3   # 기법 카드 하루 3장
 python tools/daily/daily.py card "Mamba" --category "시퀀스 대안" # 카드 1장 수동 생성
 ```

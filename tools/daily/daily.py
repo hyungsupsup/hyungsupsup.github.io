@@ -8,7 +8,7 @@
 
 사용 (저장소 루트):
   python tools/daily/daily.py run                  # 오늘 것 1회 생성
-  python tools/daily/daily.py serve --at 07:30 --push   # 상주: 매일 07:30 실행
+  python tools/daily/daily.py serve --at 07:30 --push   # 상주: 매일 07:30 실행 (시작 시 '생성 중' 페이지 먼저 push)
   (--cards N: 하루에 기법 카드 N장)
   python tools/daily/daily.py card "LoRA"          # 특정 기법 카드만 생성
 """
@@ -105,9 +105,9 @@ skip 대상:
 JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": true, "reason": "짧게", "name": "canonical 이름", "category": "카테고리 id", "group": "세부 분류"}]}"""
 
 
-def add_new_techniques(keywords: list[str], max_new: int = 5) -> list[str]:
-    """카탈로그에 없는 키워드를 LLM으로 분류해 techniques.json에 추가하고 카드를 만든다.
-    하루 max_new개까지만 카드를 바로 만들고, 나머지는 카탈로그에만 추가해 이후 '오늘의 기법'으로 순서대로 채운다."""
+def add_new_techniques(keywords: list[str], max_new: int | None = None) -> list[str]:
+    """카탈로그에 없는 키워드를 LLM으로 엄격히 심사해 techniques.json에 추가하고 카드를 바로 만든다.
+    max_new를 주면 그 수만큼만 카드를 만들고 나머지는 '오늘의 기법'으로 순서대로 채운다 (기본: 제한 없음)."""
     cand = []
     for k in keywords:
         k = k.strip()
@@ -450,10 +450,43 @@ PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴�
 
 
 # ---------------------------------------------------------------- daily
+GENERATING_MARK = "generating: true"
+
+
+def is_generating(path: Path) -> bool:
+    return path.exists() and GENERATING_MARK in path.read_text(encoding="utf-8")[:300]
+
+
+def write_daily_index(day: dt.date) -> None:
+    days = sorted((p.stem for p in DAILY_DIR.glob("????-??-??.md")), reverse=True)
+    item = lambda d: f"- [[daily/{d}|{d}]]" + (" — ⏳ 생성 중" if is_generating(DAILY_DIR / f"{d}.md") else "")
+    (DAILY_DIR / "index.md").write_text(
+        "---\ntitle: 데일리 인사이트\ndate: " + str(day) + "\ntags: [index]\n---\n\n"
+        "매일 아침 자동 생성: 오늘의 기법 카드 · 인기 논문 해설(HF · alphaXiv) · 아이디어 질문.\n\n"
+        + "\n".join(item(d) for d in days) + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_placeholder(day: dt.date) -> None:
+    """생성 시작을 알리는 임시 페이지. 생성이 끝나면 실제 데일리로 덮어쓴다."""
+    (DAILY_DIR / f"{day}.md").write_text(
+        f"---\ntitle: {day} 데일리\ndate: {day}\ntags: [daily]\n{GENERATING_MARK}\n---\n\n"
+        '<div class="dp-wait"><div class="dp-spin"></div><div><b>오늘의 데일리를 만드는 중입니다</b>'
+        f"<p>{dt.datetime.now():%H:%M}에 시작했어요. 논문 20편 해설과 기법 카드 생성에 보통 10~20분 걸립니다. "
+        "잠시 후 새로고침해 주세요.</p></div></div>\n",
+        encoding="utf-8",
+    )
+    write_daily_index(day)
+
+
 def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
     load_env()
     TECH_DIR.mkdir(parents=True, exist_ok=True)
     DAILY_DIR.mkdir(parents=True, exist_ok=True)
+    if push:  # 사이트에 '생성 중' 표시를 먼저 올린다
+        write_placeholder(day)
+        git_push(f"daily: {day} 생성 시작")
 
     nxt = next_technique()
     tech_md = "기법 사전의 모든 항목이 작성됨 — `techniques.json`에 새 기법을 추가하세요."
@@ -569,13 +602,7 @@ tags: [daily]
     )
     log(f"데일리 생성: {path.relative_to(ROOT)}")
 
-    days = sorted((p.stem for p in DAILY_DIR.glob("????-??-??.md")), reverse=True)
-    (DAILY_DIR / "index.md").write_text(
-        "---\ntitle: 데일리 인사이트\ndate: " + str(day) + "\ntags: [index]\n---\n\n"
-        "매일 아침 자동 생성: 오늘의 기법 카드 · 최신 arXiv 논문 · 아이디어 질문.\n\n"
-        + "\n".join(f"- [[daily/{d}|{d}]]" for d in days) + "\n",
-        encoding="utf-8",
-    )
+    write_daily_index(day)
     if push:
         git_push(f"daily: {day}")
     return path
@@ -587,7 +614,7 @@ def git_push(msg: str) -> None:
         if r.returncode:
             log(f"[!] {' '.join(cmd)}: {r.stderr.strip()[:300]}")
         return r.returncode == 0
-    sh("git", "add", "notes/daily", "notes/techniques")
+    sh("git", "add", "notes/daily", "notes/techniques", "tools/daily/techniques.json")
     sh("git", "commit", "-q", "-m", msg)
     if sh("git", "push", "-q"):
         log("공개 저장소 push 완료")
@@ -601,7 +628,8 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
         now = dt.datetime.now()
         today = now.date()
         due = now.time() >= dt.time(hh, mm)
-        if due and not (DAILY_DIR / f"{today}.md").exists():
+        path = DAILY_DIR / f"{today}.md"
+        if due and (not path.exists() or is_generating(path)):  # 생성 중 표시만 남은 채 실패했으면 재시도
             try:
                 run_daily(today, push, cards)
             except Exception as e:  # 실패해도 프로세스는 유지, 10분 뒤 재시도

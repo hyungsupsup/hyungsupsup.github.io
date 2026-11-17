@@ -504,3 +504,18 @@ a.dp-title:hover { color: var(--dp-accent) !important; }
 .dp-sum { color: var(--sn-text-muted); }
 .dp-techs { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: auto; padding-top: .2rem; }
 .dp-tech { font-size: .72rem; padding: .05rem .45rem; border-radius: 6px; background: var(--sn-fill); }
+
+/* ---------- 데일리: 생성 중 표시 ---------- */
+.dp-wait {
+  display: flex; gap: 1rem; align-items: center;
+  margin: 2rem 0; padding: 1.4rem 1.5rem;
+  border: 1px solid var(--sn-border); border-radius: 14px; background: var(--sn-card);
+}
+.dp-wait b { font-size: 1.05rem; color: var(--sn-text-strong); }
+.dp-wait p { margin: .3rem 0 0; color: var(--sn-text-muted); font-size: .9rem; }
+.dp-spin {
+  flex: 0 0 28px; height: 28px; border-radius: 50%;
+  border: 3px solid var(--sn-border); border-top-color: var(--secondary);
+  animation: dp-spin 0.9s linear infinite;
+}
+@keyframes dp-spin { to { transform: rotate(360deg); } }
