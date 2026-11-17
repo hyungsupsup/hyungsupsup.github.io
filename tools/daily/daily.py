@@ -11,7 +11,7 @@
   python tools/daily/daily.py serve --at 07:30 --push   # 상주: 매일 07:30 실행 (시작 시 '생성 중' 페이지 먼저 push)
   (--cards N: 하루에 기법 카드 N장)
   python tools/daily/daily.py card "LoRA"          # 특정 기법 카드만 생성
-  python tools/daily/daily.py saved [--push]       # alphaXiv 북마크 → 즐겨찾기 논문 (serve 중엔 1시간마다 자동)
+  python tools/daily/daily.py saved [--push]       # alphaXiv 북마크 → 즐겨찾기 논문 (serve 중엔 2분마다 자동)
 """
 from __future__ import annotations
 
@@ -517,6 +517,7 @@ def render_card(p: dict, pk: dict, badge: str = "", new_techs=(), saved: bool = 
 # ---------------------------------------------------------------- 즐겨찾기 (alphaXiv 북마크 동기화)
 SAVED_DB = HERE / "saved.json"
 SAVED_DIR = ROOT / "notes" / "knowledge" / "saved"
+SAVED_SYNC_SEC = 120  # serve가 alphaXiv 북마크를 확인하는 주기
 
 
 def load_saved() -> dict[str, dict]:
@@ -615,7 +616,7 @@ def write_saved_pages(db: dict[str, dict] | None = None) -> None:
     (SAVED_DIR / "index.md").write_text(
         f"---\ntitle: 즐겨찾기 논문\ndate: {today}\ntags: [index]\n---\n\n"
         '<p class="tc-lead">데일리에서 <b>☆ 담기</b>를 누르고 alphaXiv에서 북마크한 논문. '
-        f"한 시간마다 동기화되고, 북마크를 지우면 여기서도 빠집니다. 총 {len(db)}편.</p>\n"
+        f"담고 몇 분 안에 들어오고, 북마크를 지우면 여기서도 빠집니다. 총 {len(db)}편.</p>\n"
         '<div class="mh-section"><span>월별</span></div>\n' + body + "\n",
         encoding="utf-8",
     )
@@ -777,8 +778,8 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
                 log(f"[!] 실패: {e!r} — 10분 후 재시도")
                 time.sleep(600)
                 continue
-        # 한 시간마다 alphaXiv 북마크 동기화 (데일리 생성 중에는 건너뜀)
-        if time.time() - last_sync >= 3600 and not is_generating(path):
+        # 2분마다 alphaXiv 북마크 확인 (목록 조회만, 새 북마크가 있을 때만 LLM·push). 데일리 생성 중에는 건너뜀
+        if time.time() - last_sync >= SAVED_SYNC_SEC and not is_generating(path):
             last_sync = time.time()
             try:
                 if sync_saved() and push:
