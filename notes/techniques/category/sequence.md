@@ -1,6 +1,6 @@
 ---
 title: "🐍 시퀀스 대안"
-date: 2026-11-17
+date: 2026-11-18
 tags: [technique-category]
 ---
 

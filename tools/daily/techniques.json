@@ -24,7 +24,7 @@
     "desc": "Diffusion, Flow Matching, 자기회귀. 로봇 정책과 월드모델의 생성 엔진.",
     "groups": {
       "Diffusion": ["DDPM", "DDIM", "Score Matching", "Latent Diffusion", "Classifier-Free Guidance"],
-      "Flow·Few-step": ["Flow Matching", "Rectified Flow", "Consistency Model"],
+      "Flow·Few-step": ["Flow Matching", "Rectified Flow", "Consistency Model", "Distribution Matching Distillation"],
       "Discrete·Autoregressive": ["VQ-VAE", "Autoregressive Transformer"]
     }
   },
@@ -66,7 +66,8 @@
       "모방학습": ["Behavior Cloning", "DAgger"],
       "강화학습": ["PPO", "Offline RL"],
       "선호 정렬": ["RLHF", "DPO"],
-      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Coreset Selection"]
+      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Coreset Selection", "Teacher Forcing"],
+      "불확실성 추정": ["Conformal Prediction"]
     }
   },
   "robotics": {
