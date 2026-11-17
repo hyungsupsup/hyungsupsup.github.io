@@ -519,3 +519,13 @@ a.dp-title:hover { color: var(--dp-accent) !important; }
   animation: dp-spin 0.9s linear infinite;
 }
 @keyframes dp-spin { to { transform: rotate(360deg); } }
+
+/* ---------- 즐겨찾기: 담기 버튼 · 월별 카드 ---------- */
+.dp-top .dp-id { margin-left: auto; }
+.dp-star { margin-left: .6rem; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+a.dp-star { color: var(--sn-text-muted) !important; background: none !important; border: 1px solid var(--sn-border); border-radius: 999px; padding: .05rem .55rem; text-decoration: none; }
+a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
+.dp-star.on { color: #d4a017; }
+.dp-sv { --dp-accent: #d4a017; }
+.dp-saved-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; align-items: start; }
+@media (max-width: 900px) { .dp-saved-grid { grid-template-columns: 1fr; } }

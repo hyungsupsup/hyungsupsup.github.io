@@ -11,6 +11,7 @@
   python tools/daily/daily.py serve --at 07:30 --push   # 상주: 매일 07:30 실행 (시작 시 '생성 중' 페이지 먼저 push)
   (--cards N: 하루에 기법 카드 N장)
   python tools/daily/daily.py card "LoRA"          # 특정 기법 카드만 생성
+  python tools/daily/daily.py saved [--push]       # alphaXiv 북마크 → 즐겨찾기 논문 (serve 중엔 1시간마다 자동)
 """
 from __future__ import annotations
 
@@ -342,68 +343,72 @@ def fetch_hf_daily_papers(limit: int = 30) -> list[dict]:
     return out[:limit]
 
 
-def fetch_alphaxiv_papers(limit: int = 10) -> list[dict]:
-    """alphaXiv MCP(Streamable HTTP) hot feed 상위 논문을 인기 순서 그대로 가져온다. ALPHAXIV_API_KEY 필요."""
+ARXIV_ID = re.compile(r"\d{4}\.\d{4,5}(v\d+)?")
+
+
+def alphaxiv_call(tool: str, args: dict) -> dict | None:
+    """alphaXiv MCP(Streamable HTTP) 도구 호출 → 결과 텍스트를 JSON으로. 키가 없으면 None."""
     api_key = os.environ.get("ALPHAXIV_API_KEY", "").strip()
     if not api_key:
-        log("ALPHAXIV_API_KEY 미설정 — alphaXiv 수집 건너뜀")
-        return []
-    payload = json.dumps({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "tools/call",
-        "params": {
-            "name": "get_hot_feed",
-            "arguments": {"limit": limit * 2},  # 비-arXiv 슬러그를 거른 뒤에도 limit편이 남도록 여유 있게
-        },
-    }).encode("utf-8")
+        log("ALPHAXIV_API_KEY 미설정 — alphaXiv 건너뜀")
+        return None
     req = urllib.request.Request(
         "https://api.alphaxiv.org/mcp/v1",
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream",
-            "Authorization": f"Bearer {api_key}",
-            "User-Agent": "Mozilla/5.0",
-        },
+        data=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                         "params": {"name": tool, "arguments": args}}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream",
+                 "Authorization": f"Bearer {api_key}", "User-Agent": "Mozilla/5.0"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=60) as resp:
         body = resp.read().decode("utf-8")
     # Streamable HTTP는 SSE(data: {...}) 또는 일반 JSON으로 응답할 수 있음
     data_line = next((ln[5:].strip() for ln in body.splitlines() if ln.startswith("data:")), body)
     res = json.loads(data_line)
+    if res.get("error"):
+        raise RuntimeError(f"alphaXiv {tool}: {res['error']}")
     content = (res.get("result") or {}).get("content") or []
     text = "\n".join(c.get("text", "") for c in content if isinstance(c, dict))
     try:
-        items = json.loads(text)
+        return json.loads(text)
     except Exception:
+        raise RuntimeError(f"alphaXiv {tool}: JSON 아닌 응답 {text[:200]}")
+
+
+def arxiv_lookup(ids: list[str]) -> dict[str, dict]:
+    """arXiv ID 목록 → {버전 뗀 id: {id, title, abstract, published}}. 비-arXiv ID는 무시(섞이면 arXiv가 400)."""
+    ids = [i for i in ids if ARXIV_ID.fullmatch(i)]
+    found: dict[str, dict] = {}
+    for k in range(0, len(ids), 50):
+        chunk = ids[k:k + 50]
+        url = "http://export.arxiv.org/api/query?" + urllib.parse.urlencode({"id_list": ",".join(chunk), "max_results": len(chunk)})
+        root = ET.fromstring(http_get(url))
+        for e in root.findall("a:entry", NS):
+            pid = re.sub(r"v\d+$", "", e.findtext("a:id", "", NS).rsplit("/", 1)[-1])
+            found[pid] = {
+                "id": pid,
+                "title": " ".join(e.findtext("a:title", "", NS).split()),
+                "abstract": " ".join(e.findtext("a:summary", "", NS).split()),
+                "published": e.findtext("a:published", "", NS)[:10],
+            }
+    return found
+
+
+def fetch_alphaxiv_papers(limit: int = 10) -> list[dict]:
+    """alphaXiv hot feed 상위 논문을 인기 순서 그대로 가져온다."""
+    items = alphaxiv_call("get_hot_feed", {"limit": limit * 2})  # 비-arXiv 슬러그를 거른 뒤에도 limit편이 남도록
+    if not items:
         return []
     if isinstance(items, dict):
         items = items.get("papers") or items.get("results") or []
-    ids = [str(p.get("universal_paper_id") or p.get("id") or p.get("arxiv_id") or "") for p in items]
-    # alphaXiv 자체 논문 슬러그(예: 2611.weight-space-...)가 섞이면 arXiv API가 400을 반환하므로 걸러냄
-    ids = [i for i in ids if re.fullmatch(r"\d{4}\.\d{4,5}(v\d+)?", i)][:limit]
-    if not ids:
-        return []
-    # get_hot_feed는 ID만 반환하므로 arXiv API로 제목/초록을 일괄 조회
-    url = "http://export.arxiv.org/api/query?" + urllib.parse.urlencode({"id_list": ",".join(ids), "max_results": len(ids)})
-    root = ET.fromstring(http_get(url))
-    found = {}
-    for e in root.findall("a:entry", NS):
-        pid = re.sub(r"v\d+$", "", e.findtext("a:id", "", NS).rsplit("/", 1)[-1])
-        found[pid] = {
-            "id": pid,
-            "title": " ".join(e.findtext("a:title", "", NS).split()),
-            "abstract": " ".join(e.findtext("a:summary", "", NS).split()),
-            "published": e.findtext("a:published", "", NS)[:10],
-            "source": "alphaXiv",
-        }
+    ids = [re.sub(r"v\d+$", "", str(p.get("universal_paper_id") or p.get("id") or "")) for p in items]
+    ids = [i for i in ids if ARXIV_ID.fullmatch(i)][:limit]
+    found = arxiv_lookup(ids)
     # arXiv 응답 순서는 보장되지 않으므로 hot feed 순서(인기순)로 재정렬
-    out = [found[re.sub(r"v\d+$", "", i)] for i in ids if re.sub(r"v\d+$", "", i) in found]
-    for rank, p in enumerate(out[:limit], 1):
+    out = [dict(found[i], source="alphaXiv") for i in ids if i in found][:limit]
+    for rank, p in enumerate(out, 1):
         p["rank"] = rank
-    return out[:limit]
+    return out
 
 
 def fetch_papers(n: int = 10) -> tuple[list[dict], list[dict]]:
@@ -447,6 +452,167 @@ PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴�
 {"trend": "오늘 목록 전체에서 보이는 흐름 1~2문장",
  "question": "'기법 X × 문제 Y' 형태의 구체적 연구 아이디어 질문 1개 (오늘의 기법과 논문을 엮을 것)",
  "question_note": "그 질문이 왜 열려 있는지, 첫 실험은 무엇일지 2문장"}"""
+
+
+# ---------------------------------------------------------------- 논문 해설 · 카드
+def explain_papers(papers: list[dict]) -> dict[str, dict]:
+    """논문 목록 → {id: 입문자용 해설(oneline/background/claim/connect/question/keywords)}. 5편씩 나눠 요청."""
+    names = ", ".join(t for _, t in all_techniques())
+    notes: dict[str, dict] = {}
+    for i in range(0, len(papers), 5):
+        batch = papers[i:i + 5]
+        listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:1200]}" for p in batch)
+        try:
+            jb = parse_json(llm_chat(EXPLAIN_SYSTEM, f"기법 목록: {names}\n\n논문:\n{listing}"))
+            notes.update({str(pk.get("id")): pk for pk in jb.get("papers", [])})
+        except Exception as e:
+            log(f"논문 해설 실패({i}~): {e}")
+    return notes
+
+
+def tech_link(name: str, new_techs=()) -> str:
+    canon = known_technique(name)
+    if canon and (TECH_DIR / f"{slugify(canon)}.md").exists():
+        new = " dp-new" if canon in new_techs else ""
+        return f'<a class="internal dp-tech{new}" href="/techniques/{slugify(canon)}">{html_escape(name)}</a>'
+    return f'<span class="dp-tech">{html_escape(name)}</span>'
+
+
+def render_card(p: dict, pk: dict, badge: str = "", new_techs=(), saved: bool = False) -> str:
+    """논문 카드 HTML. 데일리와 즐겨찾기 페이지가 같이 쓴다."""
+    esc = lambda x: html_escape(strip_math(str(x or "")))
+
+    def row(icon: str, label: str, text: str, cls: str = "") -> str:
+        lab = f"<b>{label}</b>" if label else ""
+        return f'<div class="dp-row {cls}"><span class="dp-ic">{icon}</span><div>{lab}{text}</div></div>'
+
+    title = f'<a class="dp-title external" href="https://arxiv.org/abs/{p["id"]}">{html_escape(p["title"])}</a>'
+    parts = [row("📄", "", title, "dp-trow")]
+    if pk.get("oneline"):
+        parts.append(row("💡", "", esc(pk["oneline"]), "dp-one"))
+    for icon, label, k in [("🕰️", "배경", "background"), ("🎯", "이 논문의 주장", "claim"),
+                           ("🔗", "내가 아는 것과의 연결", "connect"), ("❓", "생각해 볼 질문", "question")]:
+        if pk.get(k):
+            parts.append(row(icon, label, esc(pk[k])))
+    if not pk:
+        parts.append(row("📝", "초록", esc(p.get("abstract", "")[:400]) + "…"))
+    techs = " ".join(tech_link(t, new_techs) for t in pk.get("keywords", []))
+    if techs:
+        parts.append(row("🏷️", "", f'<div class="dp-techs">{techs}</div>'))
+    # alphaXiv에서 북마크하면 다음 동기화 때 즐겨찾기 논문으로 들어온다
+    star = ('<span class="dp-star on">⭐ 담음</span>' if saved else
+            f'<a class="dp-star external" href="https://www.alphaxiv.org/abs/{p["id"]}" title="alphaXiv에서 북마크하면 즐겨찾기 논문에 추가">☆ 담기</a>')
+    return (
+        f'<div class="dp-card"><div class="dp-top"><span class="dp-badge">{badge}</span>'
+        f'<span class="dp-id">arXiv:{p["id"]}</span>{star}</div>' + "".join(parts) + "</div>"
+    )
+
+
+# ---------------------------------------------------------------- 즐겨찾기 (alphaXiv 북마크 동기화)
+SAVED_DB = HERE / "saved.json"
+SAVED_DIR = ROOT / "notes" / "knowledge" / "saved"
+
+
+def load_saved() -> dict[str, dict]:
+    return json.loads(SAVED_DB.read_text(encoding="utf-8")) if SAVED_DB.exists() else {}
+
+
+def fetch_bookmarks() -> dict[str, list[str]] | None:
+    """alphaXiv 라이브러리의 모든 폴더(내 논문 폴더 제외) → {arXiv id: [폴더 이름]}. 실패 시 None."""
+    lib = alphaxiv_call("list_library", {"include_papers": True})
+    if lib is None:
+        return None
+    out: dict[str, list[str]] = {}
+    for f in lib.get("folders", []):
+        if f.get("type") == "default-publications":
+            continue
+        if f.get("papers_truncated"):
+            log(f"[!] alphaXiv 폴더 '{f.get('name')}' 논문 목록이 잘려서 일부만 동기화됨")
+        for p in f.get("papers", []):
+            pid = re.sub(r"v\d+$", "", str(p.get("id") or p.get("universal_paper_id") or ""))
+            if ARXIV_ID.fullmatch(pid):
+                out.setdefault(pid, []).append(f.get("name", ""))
+    return out
+
+
+def sync_saved() -> bool:
+    """alphaXiv 북마크 ↔ saved.json 동기화 후 즐겨찾기 페이지 생성. 변경이 있었으면 True."""
+    load_env()
+    try:
+        marks = fetch_bookmarks()
+    except Exception as e:
+        log(f"alphaXiv 북마크 조회 실패: {e}")
+        return False
+    if marks is None:
+        return False
+    db = load_saved()
+    changed = False
+    for pid in [k for k in db if k not in marks]:  # alphaXiv에서 북마크를 지우면 여기서도 뺀다
+        log(f"즐겨찾기 해제: {db[pid]['title']}")
+        del db[pid]
+        changed = True
+    for pid, folders in marks.items():
+        if pid in db and db[pid].get("folders") != folders:
+            db[pid]["folders"] = folders
+            changed = True
+    new_ids = [pid for pid in marks if pid not in db]
+    if new_ids:
+        meta = arxiv_lookup(new_ids)
+        papers = [meta[i] for i in new_ids if i in meta]
+        notes = explain_papers(papers)
+        add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])])
+        today = str(dt.date.today())
+        for p in papers:
+            db[p["id"]] = dict(p, saved=today, folders=marks[p["id"]], note=notes.get(p["id"], {}))
+            log(f"즐겨찾기 추가: {p['title']}")
+        changed = True
+    if changed:
+        SAVED_DB.write_text(json.dumps(db, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        write_tech_index()
+    write_saved_pages(db)
+    return changed
+
+
+def write_saved_pages(db: dict[str, dict] | None = None) -> None:
+    """즐겨찾기 목차(연-월 카드) + 월별 페이지(논문 카드) 생성."""
+    db = load_saved() if db is None else db
+    SAVED_DIR.mkdir(parents=True, exist_ok=True)
+    by_month: dict[str, list[dict]] = {}
+    for p in db.values():
+        by_month.setdefault(p["saved"][:7], []).append(p)
+    for old in SAVED_DIR.glob("????-??.md"):
+        if old.stem not in by_month:
+            old.unlink()
+    today = dt.date.today()
+    for ym, items in by_month.items():
+        items.sort(key=lambda x: (x["saved"], x["id"]), reverse=True)
+        y, m = ym.split("-")
+        cards = "".join(render_card(p, p.get("note", {}), f'⭐ {p["saved"][5:].replace("-", "/")}', saved=True) for p in items)
+        (SAVED_DIR / f"{ym}.md").write_text(
+            f"---\ntitle: {y}년 {int(m)}월 즐겨찾기\ndate: {today}\ntags: [saved]\n---\n\n"
+            f'<p class="tc-lead">{y}년 {int(m)}월에 담은 논문 {len(items)}편. 최근에 담은 순.</p>\n'
+            f'<div class="dp-src dp-sv"><div class="dp-saved-grid">{cards}</div></div>\n',
+            encoding="utf-8",
+        )
+    months = sorted(by_month, reverse=True)
+    if months:
+        grid = "".join(
+            f'<a class="mh-card internal" href="/knowledge/saved/{ym}"><div class="mh-cover {COVERS[k % len(COVERS)]}">⭐</div>'
+            f'<div class="mh-body"><h3>{ym[:4]}년 {int(ym[5:])}월</h3>'
+            f'<p>{html_escape(" · ".join(p["title"] for p in sorted(by_month[ym], key=lambda x: x["saved"], reverse=True)[:3]))}</p>'
+            f'<div class="mh-meta">{len(by_month[ym])}편</div></div></a>'
+            for k, ym in enumerate(months)
+        )
+        body = f'<div class="mh-grid">{grid}</div>'
+    else:
+        body = '<p class="dp-row">아직 담은 논문이 없습니다. 데일리 카드의 ☆ 담기 → alphaXiv에서 북마크하세요.</p>'
+    (SAVED_DIR / "index.md").write_text(
+        f"---\ntitle: 즐겨찾기 논문\ndate: {today}\ntags: [index]\n---\n\n"
+        '<p class="tc-lead">데일리에서 <b>☆ 담기</b>를 누르고 alphaXiv에서 북마크한 논문. '
+        f"한 시간마다 동기화되고, 북마크를 지우면 여기서도 빠집니다. 총 {len(db)}편.</p>\n"
+        '<div class="mh-section"><span>월별</span></div>\n' + body + "\n",
+        encoding="utf-8",
+    )
 
 
 # ---------------------------------------------------------------- daily
@@ -507,56 +673,18 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
     log(f"인기 논문 조회: HF {len(hf)}편, alphaXiv {len(ax)}편")
     # 두 출처에 같은 논문이 있으면 LLM에는 한 번만 보낸다 (화면에는 양쪽 열에 모두 표시)
     uniq = list({p["id"]: p for p in hf + ax}.values())
-    names = ", ".join(t for _, t in all_techniques())
-    notes: dict[str, dict] = {}
-    for i in range(0, len(uniq), 5):  # 출력이 길어서 5편씩 나눠 요청
-        batch = uniq[i:i + 5]
-        listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:1200]}" for p in batch)
-        try:
-            jb = parse_json(llm_chat(EXPLAIN_SYSTEM, f"기법 목록: {names}\n\n논문:\n{listing}"))
-            notes.update({str(pk.get("id")): pk for pk in jb.get("papers", [])})
-        except Exception as e:
-            log(f"논문 해설 실패({i}~): {e}")
+    notes = explain_papers(uniq)
     # 논문 키워드 중 기법 사전에 없는 것은 자동 추가 + 카드 생성
     new_techs = add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])])
     write_tech_index()
     digest = "\n".join(f"- {p['title']}: {notes.get(p['id'], {}).get('oneline', '')}" for p in uniq)
     j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n\n오늘의 논문:\n{digest}"))
 
-    def tech_link(name: str) -> str:
-        canon = known_technique(name)
-        if canon and (TECH_DIR / f"{slugify(canon)}.md").exists():
-            new = " dp-new" if canon in new_techs else ""
-            return f'<a class="internal dp-tech{new}" href="/techniques/{slugify(canon)}">{html_escape(name)}</a>'
-        return f'<span class="dp-tech">{html_escape(name)}</span>'
-
-    esc = lambda x: html_escape(strip_math(str(x or "")))
+    saved_ids = set(load_saved())
 
     def paper_card(p: dict) -> str:
-        pk = notes.get(p["id"], {})
-        techs = " ".join(tech_link(t) for t in pk.get("keywords", []))
         badge = f'▲ {p["upvotes"]}' if p["source"] == "HF" else (f'#{p["rank"]}' if p.get("rank") else "")
-
-        def row(icon: str, label: str, text: str, cls: str = "") -> str:
-            lab = f"<b>{label}</b>" if label else ""
-            return f'<div class="dp-row {cls}"><span class="dp-ic">{icon}</span><div>{lab}{text}</div></div>'
-
-        title = f'<a class="dp-title external" href="https://arxiv.org/abs/{p["id"]}">{html_escape(p["title"])}</a>'
-        parts = [row("📄", "", title, "dp-trow")]
-        if pk.get("oneline"):
-            parts.append(row("💡", "", esc(pk["oneline"]), "dp-one"))
-        for icon, label, k in [("🕰️", "배경", "background"), ("🎯", "이 논문의 주장", "claim"),
-                               ("🔗", "내가 아는 것과의 연결", "connect"), ("❓", "생각해 볼 질문", "question")]:
-            if pk.get(k):
-                parts.append(row(icon, label, esc(pk[k])))
-        if not pk:
-            parts.append(row("📝", "초록", esc(p["abstract"][:400]) + "…"))
-        if techs:
-            parts.append(row("🏷️", "", f'<div class="dp-techs">{techs}</div>'))
-        return (
-            f'<div class="dp-card"><div class="dp-top"><span class="dp-badge">{badge}</span>'
-            f'<span class="dp-id">arXiv:{p["id"]}</span></div>' + "".join(parts) + "</div>"
-        )
+        return render_card(p, notes.get(p["id"], {}), badge, new_techs, saved=p["id"] in saved_ids)
 
     def column(cls: str, icon: str, name: str, sub: str, items: list[dict]) -> str:
         cards_html = "".join(paper_card(p) for p in items) or '<p class="dp-row">오늘은 가져오지 못함</p>'
@@ -614,7 +742,8 @@ def git_push(msg: str) -> None:
         if r.returncode:
             log(f"[!] {' '.join(cmd)}: {r.stderr.strip()[:300]}")
         return r.returncode == 0
-    sh("git", "add", "notes/daily", "notes/techniques", "tools/daily/techniques.json")
+    sh("git", "add", "notes/daily", "notes/techniques", "notes/knowledge/saved",
+       "tools/daily/techniques.json", "tools/daily/saved.json")
     sh("git", "commit", "-q", "-m", msg)
     if sh("git", "push", "-q"):
         log("공개 저장소 push 완료")
@@ -624,6 +753,7 @@ def git_push(msg: str) -> None:
 def serve(at: str, push: bool, cards: int = 1) -> None:
     hh, mm = map(int, at.split(":"))
     log(f"상주 모드 시작 — 매일 {at} 실행 (Ctrl+C 종료)")
+    last_sync = 0.0
     while True:
         now = dt.datetime.now()
         today = now.date()
@@ -636,6 +766,14 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
                 log(f"[!] 실패: {e!r} — 10분 후 재시도")
                 time.sleep(600)
                 continue
+        # 한 시간마다 alphaXiv 북마크 동기화 (데일리 생성 중에는 건너뜀)
+        if time.time() - last_sync >= 3600 and not is_generating(path):
+            last_sync = time.time()
+            try:
+                if sync_saved() and push:
+                    git_push(f"saved: 즐겨찾기 동기화 {now:%Y-%m-%d %H:%M}")
+            except Exception as e:
+                log(f"[!] 즐겨찾기 동기화 실패: {e!r}")
         time.sleep(60)
 
 
@@ -647,8 +785,12 @@ def main() -> None:
     s.add_argument("--cards", type=int, default=1, help="하루에 만들 기법 카드 수")
     c = sub.add_parser("card"); c.add_argument("name"); c.add_argument("--category", default="기타")
     sub.add_parser("index", help="기법 사전 목차·카테고리 페이지만 다시 생성")
+    sv = sub.add_parser("saved", help="alphaXiv 북마크 → 즐겨찾기 논문 동기화"); sv.add_argument("--push", action="store_true")
     a = ap.parse_args()
-    if a.cmd == "run":
+    if a.cmd == "saved":
+        if sync_saved() and a.push:
+            git_push("saved: 즐겨찾기 동기화")
+    elif a.cmd == "run":
         run_daily(dt.date.today(), a.push, a.cards)
     elif a.cmd == "serve":
         serve(a.at, a.push, a.cards)
