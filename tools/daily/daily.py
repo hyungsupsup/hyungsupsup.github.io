@@ -86,10 +86,23 @@ def known_technique(name: str) -> str | None:
     return {_norm(t): t for _, t in all_techniques()}.get(_norm(name))
 
 
-CLASSIFY_SYSTEM = """기법 사전에 새 항목을 분류한다. 각 키워드에 대해:
-- 논문 고유의 시스템·모델 이름이거나 너무 일반적인 단어(예: "Robotics", "Benchmark", "Deep Learning")면 skip: true.
-- 아니면 canonical 영어 이름(널리 쓰이는 표기), 카테고리 id(주어진 목록 중 하나), 세부 분류(기존 세부 분류 중 맞는 것, 없으면 새 이름 짧게)를 정한다.
-JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": false, "name": "canonical 이름", "category": "카테고리 id", "group": "세부 분류"}]}"""
+CLASSIFY_SYSTEM = """AI 기법 사전에 넣을 후보 키워드를 **엄격하게** 심사한다. 애매하면 무조건 skip. 하루 0개 추가도 정상이다.
+
+통과 조건 (전부 만족해야 함):
+1. 구체적인 **기법·알고리즘·모듈·학습 방법** 이름이다 (예: LoRA, Flow Matching, Speculative Decoding, Chain-of-Thought, Diffusion Policy, PPO).
+2. 여러 논문에서 같은 이름으로 재사용되는, 이미 자리잡은 용어다. 서베이·교과서·위키에 항목으로 나올 수준.
+3. "이게 어떻게 작동하나"를 한 장짜리 카드(문제 → 핵심 아이디어 → 트레이드오프)로 설명할 수 있다.
+
+skip 대상:
+- 논문 고유 시스템·모델·데이터셋·벤치마크 이름 (예: "Diffusion Drafter", "GPT-6", "LIBERO")
+- 분야·과제·문제 이름 (예: "Robotics", "Manipulation", "Sim-to-Real", "Embodied AI", "Autonomous Driving")
+- 일반 부품·막연한 개념 (예: "Visual Encoder", "Memory", "Planner", "Benchmark", "Simulation", "Multi-Agent System")
+- 데이터 수집 관행·실험 설정 (예: "Egocentric Recording", "Teleoperation Setup")
+- 키워드 끝에 붙은 수식어만 다른 변형 (예: "Sparse-thinking Instruction Tuning" → skip)
+- 아래 '기존 기법'과 같은 것이거나 약어/동의어인 경우 (예: VLA ↔ Vision-Language-Action Model) → skip
+
+통과하면 canonical 영어 이름, 카테고리 id(주어진 목록 중 하나), 세부 분류(기존 세부 분류 중 맞는 것 우선, 없으면 새 이름 짧게)를 정한다.
+JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": true, "reason": "짧게", "name": "canonical 이름", "category": "카테고리 id", "group": "세부 분류"}]}"""
 
 
 def add_new_techniques(keywords: list[str], max_new: int = 5) -> list[str]:
@@ -104,7 +117,8 @@ def add_new_techniques(keywords: list[str], max_new: int = 5) -> list[str]:
         return []
     cats = {cid: {"name": c["name"], "groups": list(c["groups"])} for cid, c in CATALOG.items()}
     try:
-        j = parse_json(llm_chat(CLASSIFY_SYSTEM, f"카테고리: {json.dumps(cats, ensure_ascii=False)}\n\n키워드: {json.dumps(cand, ensure_ascii=False)}"))
+        existing = ", ".join(t for _, t in all_techniques())
+        j = parse_json(llm_chat(CLASSIFY_SYSTEM, f"카테고리: {json.dumps(cats, ensure_ascii=False)}\n\n기존 기법: {existing}\n\n키워드: {json.dumps(cand, ensure_ascii=False)}"))
     except Exception as e:
         log(f"새 기법 분류 실패: {e}")
         return []
