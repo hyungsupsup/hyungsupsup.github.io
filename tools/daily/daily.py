@@ -34,6 +34,12 @@ from paperdb import ROOT, http_get, llm_chat, load_env, parse_json, yaml_str  # 
 HERE = Path(__file__).resolve().parent
 TECH_DIR = ROOT / "notes" / "techniques"
 DAILY_DIR = ROOT / "notes" / "daily"
+
+
+def daily_path(day) -> Path:
+    """데일리는 연-월 폴더로 묶는다: notes/daily/2026-11/2026-11-17.md"""
+    d = str(day)
+    return DAILY_DIR / d[:7] / f"{d}.md"
 CATALOG = json.loads((HERE / "techniques.json").read_text(encoding="utf-8"))
 
 
@@ -624,19 +630,24 @@ def is_generating(path: Path) -> bool:
 
 
 def write_daily_index(day: dt.date) -> None:
-    days = sorted((p.stem for p in DAILY_DIR.glob("????-??-??.md")), reverse=True)
-    item = lambda d: f"- [[daily/{d}|{d}]]" + (" — ⏳ 생성 중" if is_generating(DAILY_DIR / f"{d}.md") else "")
+    days = sorted((p.stem for p in DAILY_DIR.glob("????-??/????-??-??.md")), reverse=True)
+    item = lambda d: f"- [[daily/{d[:7]}/{d}|{d}]]" + (" — ⏳ 생성 중" if is_generating(daily_path(d)) else "")
+    months: dict[str, list[str]] = {}
+    for d in days:
+        months.setdefault(d[:7], []).append(d)
+    body = "\n\n".join(f"## {ym[:4]}년 {int(ym[5:])}월\n" + "\n".join(item(d) for d in ds) for ym, ds in months.items())
     (DAILY_DIR / "index.md").write_text(
         "---\ntitle: 데일리 인사이트\ndate: " + str(day) + "\ntags: [index]\n---\n\n"
         "매일 아침 자동 생성: 오늘의 기법 카드 · 인기 논문 해설(HF · alphaXiv) · 아이디어 질문.\n\n"
-        + "\n".join(item(d) for d in days) + "\n",
+        + body + "\n",
         encoding="utf-8",
     )
 
 
 def write_placeholder(day: dt.date) -> None:
     """생성 시작을 알리는 임시 페이지. 생성이 끝나면 실제 데일리로 덮어쓴다."""
-    (DAILY_DIR / f"{day}.md").write_text(
+    daily_path(day).parent.mkdir(parents=True, exist_ok=True)
+    daily_path(day).write_text(
         f"---\ntitle: {day} 데일리\ndate: {day}\ntags: [daily]\n{GENERATING_MARK}\n---\n\n"
         '<div class="dp-wait"><div class="dp-spin"></div><div><b>오늘의 데일리를 만드는 중입니다</b>'
         f"<p>{dt.datetime.now():%H:%M}에 시작했어요. 논문 20편 해설과 기법 카드 생성에 보통 10~20분 걸립니다. "
@@ -702,7 +713,7 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
         + "</div>\n"
     ) if hf or ax else "(논문 조회 실패)"
 
-    path = DAILY_DIR / f"{day}.md"
+    path = daily_path(day)
     path.write_text(
         f"""---
 title: {day} 데일리
@@ -758,7 +769,7 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
         now = dt.datetime.now()
         today = now.date()
         due = now.time() >= dt.time(hh, mm)
-        path = DAILY_DIR / f"{today}.md"
+        path = daily_path(today)
         if due and (not path.exists() or is_generating(path)):  # 생성 중 표시만 남은 채 실패했으면 재시도
             try:
                 run_daily(today, push, cards)

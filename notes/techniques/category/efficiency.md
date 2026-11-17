@@ -1,6 +1,6 @@
 ---
 title: "⚡ 효율화·적응"
-date: 2026-11-13
+date: 2026-11-17
 tags: [technique-category]
 ---
 
@@ -10,6 +10,6 @@ tags: [technique-category]
 <div class="mh-section"><span>압축·경량화</span></div>
 <div class="tc-grid"><div class="tc-card tc-todo"><h4>Knowledge Distillation</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Quantization</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>조건부 계산</span></div>
-<div class="tc-grid"><div class="tc-card tc-todo"><h4>Mixture of Experts</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
+<div class="tc-grid"><div class="tc-card tc-todo"><h4>Mixture of Experts</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Token Pruning</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 
 [[techniques/index|← 기법 사전 전체]]
