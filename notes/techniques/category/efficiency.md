@@ -6,10 +6,10 @@ tags: [technique-category]
 
 <p class="tc-lead">큰 모델을 적은 자원으로 학습·적응·배포하는 기법.</p>
 <div class="mh-section"><span>Parameter-Efficient Fine-Tuning</span></div>
-<div class="tc-grid"><div class="tc-card tc-todo"><h4>LoRA</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>QLoRA</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Adapter</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Prefix Tuning</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/lora"><h4>LoRA</h4><p>거대 모델의 몸통은 얼려두고, 옆에 얇은 '덧대기 판' 두 장만 붙여 학습하는 초경량 미세조정 기법 — 두꺼운 사전에 포스트잇만 붙이는 셈.</p><span class="tc-badge">초안</span></a><div class="tc-card tc-todo"><h4>QLoRA</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Adapter</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Prefix Tuning</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>압축·경량화</span></div>
-<div class="tc-grid"><div class="tc-card tc-todo"><h4>Knowledge Distillation</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Quantization</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
+<div class="tc-grid"><div class="tc-card tc-todo"><h4>Knowledge Distillation</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><a class="tc-card internal" href="/techniques/quantization"><h4>Quantization</h4><p>고해상도 사진을 JPEG로 저장하듯, 숫자를 굵직한 눈금으로 반올림해 모델을 4분의 1~8분의 1 크기로 눌러 담는 경량화 기법</p><span class="tc-badge">초안</span></a></div>
 <div class="mh-section"><span>조건부 계산</span></div>
-<div class="tc-grid"><div class="tc-card tc-todo"><h4>Mixture of Experts</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Token Pruning</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
+<div class="tc-grid"><div class="tc-card tc-todo"><h4>Mixture of Experts</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><a class="tc-card internal" href="/techniques/token-pruning"><h4>Token Pruning</h4><p>수많은 토큰 중 '별로 안 중요한 것'을 솎아내 계산량을 줄이는 효율화 기법 — 회의에서 핵심 발언만 남기고 잡담은 접어두는 것.</p><span class="tc-badge">초안</span></a></div>
 
 [[techniques/index|← 기법 사전 전체]]

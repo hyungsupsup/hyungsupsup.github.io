@@ -6,9 +6,9 @@ tags: [technique-category]
 
 <p class="tc-lead">모방학습, 강화학습, 선호 학습. 정책을 어떻게 가르치는가.</p>
 <div class="mh-section"><span>모방학습</span></div>
-<div class="tc-grid"><div class="tc-card tc-todo"><h4>Behavior Cloning</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>DAgger</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/behavior-cloning"><h4>Behavior Cloning</h4><p>전문가가 운전하는 모습을 옆에서 지켜보고 '이 상황에선 이렇게 움직이더라'를 통째로 외워서 따라 하는 학습법 — 즉 로봇판 '보고 배우기(모방 학습)'의 가장 기본형.</p><span class="tc-badge">초안</span></a><div class="tc-card tc-todo"><h4>DAgger</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>강화학습</span></div>
-<div class="tc-grid"><div class="tc-card tc-todo"><h4>PPO</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Offline RL</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/ppo"><h4>PPO</h4><p>정책(policy, 상황을 보고 행동을 고르는 규칙)을 업데이트하되 '한 번에 너무 멀리 가지 않도록 목줄을 채우는' 강화학습 기법 — 새 정책이 옛 정책에서 크게 벗어나면 이득을 잘라버린다.</p><span class="tc-badge">초안</span></a><div class="tc-card tc-todo"><h4>Offline RL</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>선호 정렬</span></div>
 <div class="tc-grid"><div class="tc-card tc-todo"><h4>RLHF</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>DPO</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>학습 전략</span></div>
