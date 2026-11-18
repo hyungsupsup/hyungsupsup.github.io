@@ -53,19 +53,24 @@ def log(msg: str) -> None:
 
 
 # ---------------------------------------------------------------- 기법 카드
-CARD_SYSTEM = """당신은 AI 연구자의 기법 사전을 작성한다. 독자는 diffusion/CV 석사 + LLM 엔지니어이며 피지컬 AI(로봇 학습, VLA, 월드모델) 연구 아이디어를 구상하려 한다.
-한국어로 쓰되 기술 용어·모델명은 영어 원문 유지. 확신 없는 수치·연도·저자는 쓰지 말거나 '(확인 필요)'를 붙여라.
+CARD_SYSTEM = """당신은 AI/로보틱스 기법 사전을 **누구나 단번에 이해할 수 있게** 풀어서 쓰는 해설자다.
+독자: LLM 에이전트·diffusion·CV는 익숙하지만, 생소한 기법이나 로보틱스·강화학습·최적화 용어는 처음 볼 수 있다.
+작성 원칙:
+- 교과서식 정의나 현학적인 수식 나열을 피하고, **일상적인 비유 + '무엇이 들어가서 어떻게 바뀐 뒤 무엇이 나오는지'** 흐름으로 쉽게 풀어 쓴다.
+- 전문용어·약어가 처음 나오면 반드시 괄호로 쉬운 설명을 붙인다. 예: KV cache(이전에 읽은 단어들의 핵심 정보를 다시 계산하지 않도록 저장해 두는 메모리).
+- 복잡한 LaTeX 수식($...$)은 꼭 필요한 경우가 아니면 쓰지 말고 말로 풀어 설명한다.
+- 한국어로 쓰되 기술 용어·모델명은 영어 원문 유지. 확신 없는 수치·연도·저자는 쓰지 말거나 '(확인 필요)'를 붙여라.
 JSON 하나만 출력:
-{"one_liner": "한 문장 정의",
+{"one_liner": "처음 보는 사람도 3초 만에 감을 잡을 수 있는 쉬운 한 줄 정의 (비유 포함 가능)",
  "year_paper": "대표 논문 제목 (연도)",
- "problem": "이전 방법의 어떤 병목을 해결했나 (2~3문장)",
- "core_idea": "핵심 아이디어 (3~5문장, 필요하면 LaTeX 수식 $...$ 포함)",
- "why_it_works": "직관적 설명 (2~3문장)",
- "tradeoffs": ["한계/비용 1", "..."],
- "predecessors": ["이 기법이 개선한 기법 이름", "..."],
- "successors": ["이 기법을 개선/변형한 기법 이름", "..."],
- "robotics_use": ["피지컬 AI/로봇에서 쓰이는 구체적 예 (모델명 포함)", "..."],
- "idea_hooks": ["아직 덜 탐구된 조합이나 연구 질문", "..."]}"""
+ "problem": "이 기법이 나오기 전에는 무엇이 왜 불편했고 어떤 한계가 있었나 (쉬운 말로 2~3문장)",
+ "core_idea": "비유 1문장 + 실제로 작동하는 원리/단계를 순서대로 쉽게 풀어 설명 (3~4문장)",
+ "why_it_works": "기존 방법 대신 이렇게 하면 왜 성능이나 속도가 좋아지는지 직관적 이유 (2~3문장)",
+ "tradeoffs": ["실제로 쓸 때 감수해야 할 단점이나 한계 2~3개 (각 1문장, 쉽게)"],
+ "predecessors": ["이 기법이 개선한 이전 기법 이름"],
+ "successors": ["이 기법을 발전시킨 후속 기법 이름"],
+ "robotics_use": ["피지컬 AI(로봇·VLA·월드모델)나 LLM/CV 실전에서 어떻게 쓰이는지 쉬운 예시 2~3개"],
+ "idea_hooks": ["이 기법을 다른 문제나 기법과 엮어볼 수 있는 쉬운 아이디어 질문 2~3개"]}"""
 
 
 def all_techniques() -> list[tuple[str, str]]:
@@ -88,58 +93,45 @@ def _norm(x: str) -> str:
     return slugify(x).replace("-", "")
 
 
+ALIAS_MAP: dict[str, str] = {}
+
+
 def known_technique(name: str) -> str | None:
-    """카탈로그에 있으면 카탈로그상의 정식 이름을 반환 (대소문자·하이픈·괄호 차이 무시)."""
-    return {_norm(t): t for _, t in all_techniques()}.get(_norm(name))
+    """카탈로그에 있으면 카탈로그상의 정식 이름을 반환 (대소문자·하이픈·괄호·별칭 차이 무시)."""
+    target = ALIAS_MAP.get(_norm(name), name)
+    return {_norm(t): t for _, t in all_techniques()}.get(_norm(target))
 
 
-CLASSIFY_SYSTEM = """AI 기법 사전에 넣을 후보 키워드를 **엄격하게** 심사한다. 애매하면 무조건 skip. 하루 0개 추가도 정상이다.
-
-통과 조건 (전부 만족해야 함):
-1. 구체적인 **기법·알고리즘·모듈·학습 방법** 이름이다 (예: LoRA, Flow Matching, Speculative Decoding, Chain-of-Thought, Diffusion Policy, PPO).
-2. 여러 논문에서 같은 이름으로 재사용되는, 이미 자리잡은 용어다. 서베이·교과서·위키에 항목으로 나올 수준.
-3. "이게 어떻게 작동하나"를 한 장짜리 카드(문제 → 핵심 아이디어 → 트레이드오프)로 설명할 수 있다.
-
-skip 대상:
-- 논문 고유 시스템·모델·데이터셋·벤치마크 이름 (예: "Diffusion Drafter", "GPT-6", "LIBERO")
-- 분야·과제·문제 이름 (예: "Robotics", "Manipulation", "Sim-to-Real", "Embodied AI", "Autonomous Driving")
-- 일반 부품·막연한 개념 (예: "Visual Encoder", "Memory", "Planner", "Benchmark", "Simulation", "Multi-Agent System")
-- 데이터 수집 관행·실험 설정 (예: "Egocentric Recording", "Teleoperation Setup")
-- 키워드 끝에 붙은 수식어만 다른 변형 (예: "Sparse-thinking Instruction Tuning" → skip)
-- 아래 '기존 기법'과 같은 것이거나 약어/동의어인 경우 (예: VLA ↔ Vision-Language-Action Model) → skip
-
-통과하면 canonical 영어 이름, 카테고리 id(주어진 목록 중 하나), 세부 분류(기존 세부 분류 중 맞는 것 우선, 없으면 새 이름 짧게)를 정한다.
-JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": true, "reason": "짧게", "name": "canonical 이름", "category": "카테고리 id", "group": "세부 분류"}]}"""
+def known_technique_cat(name: str) -> tuple[str, str] | None:
+    """카탈로그에 있으면 (카테고리 이름, 정식 이름) 반환."""
+    target = ALIAS_MAP.get(_norm(name), name)
+    return {_norm(t): (cat, t) for cat, t in all_techniques()}.get(_norm(target))
 
 
-def add_new_techniques(keywords: list[str], max_new: int | None = None) -> list[str]:
-    """카탈로그에 없는 키워드를 LLM으로 엄격히 심사해 techniques.json에 추가하고 카드를 바로 만든다.
-    max_new를 주면 그 수만큼만 카드를 만들고 나머지는 '오늘의 기법'으로 순서대로 채운다 (기본: 제한 없음)."""
-    cand = []
-    for k in keywords:
-        k = k.strip()
-        if k and not known_technique(k) and _norm(k) not in {_norm(c) for c in cand}:
-            cand.append(k)
-    if not cand:
-        return []
-    cats = {cid: {"name": c["name"], "groups": list(c["groups"])} for cid, c in CATALOG.items()}
-    try:
-        existing = ", ".join(t for _, t in all_techniques())
-        j = parse_json(llm_chat(CLASSIFY_SYSTEM, f"카테고리: {json.dumps(cats, ensure_ascii=False)}\n\n기존 기법: {existing}\n\n키워드: {json.dumps(cand, ensure_ascii=False)}"))
-    except Exception as e:
-        log(f"새 기법 분류 실패: {e}")
-        return []
-    added = []
-    for it in j.get("items", []):
-        name = (it.get("name") or "").strip()
-        cid = it.get("category")
-        if it.get("skip") or not name or cid not in CATALOG or known_technique(name):
-            continue
-        group = (it.get("group") or "기타").strip()
-        CATALOG[cid]["groups"].setdefault(group, []).append(name)
-        added.append((CATALOG[cid]["name"], name))
-    if not added:
-        return []
+CLASSIFY_SYSTEM = """논문에서 추출된 AI/로봇/ML 기법·방법론 키워드를 기법 사전(techniques.json) 카테고리에 분류한다.
+
+사전의 목적: 연구 아이디어를 구상할 때 **가져다 쓸 수 있는, 유명하고 검증된 모듈·모델·기법**을 모으는 것.
+애매하면 무조건 skip. 하루 0개 추가도 정상이다.
+
+규칙:
+1. '기존 기법' 목록에 있는 것의 동의어·약어·변형 표기면 새로 만들지 말고 `skip: false`, `name`을 **기존 기법의 정확한 이름**으로 매핑한다. (예: VLA → 기존 이름)
+2. 새로 추가하려면 아래를 **모두** 만족해야 한다:
+   a. 구체적인 **이름이 붙은** 모듈·아키텍처·알고리즘·학습 기법·모델이다 (예: LoRA, FlashAttention, PPO, DPO, Flow Matching, Diffusion Policy, ACT, CLIP, SAM, DINOv2, ViT, Perceiver, MoE, Speculative Decoding, Chain-of-Thought).
+   b. **검증되고 널리 쓰인다**: 출처 논문이 분명하고 많은 후속 연구가 그대로 가져다 쓰거나, 주요 라이브러리(PyTorch, HF Transformers/PEFT/Diffusers, LeRobot 등)에 구현이 있다.
+   c. 모델 이름이라면 그 자체가 표준 백본·기준선으로 자리잡은 것만 (예: CLIP, SAM, Llama, OpenVLA, π0). 오늘 논문이 새로 제안한 모델·시스템은 제외.
+3. 다음은 skip:
+   - 현상·문제·성질·개념 용어 (예: Evaluation Noise, Catastrophic Forgetting, Hallucination, Reward Hacking, Distribution Shift)
+   - 연구 분야·과제·패러다임 이름 (예: Continual Learning, Sim-to-Real, Robotics, Embodied AI, Multi-Agent Reasoning)
+   - 평가 지표·벤치마크·실험 절차 (예: F1, Score@1, Benchmark Evaluation, Ablation)
+   - 막연한 일반 용어 (예: Harness Optimization, Visual Encoder, Memory, Planner, Program Optimization)
+   - 데이터 수집 관행 (예: Teleoperation Setup, Egocentric Recording)
+   - 개별 논문의 고유 모델·데이터셋·시스템 이름 (예: GPT-6, LIBERO, SWE-CoWork)
+4. 통과하면 canonical 영어 이름(`name`), 카테고리 id(`category`, 주어진 목록 중 하나), 세부 분류(`group`, 기존 세부 분류 중 맞는 것 우선, 없으면 새 이름 짧게)를 정한다.
+
+JSON만 출력: {"items": [{"keyword": "입력 그대로", "skip": true, "reason": "짧게 (통과면 출처 논문/라이브러리 근거)", "name": "canonical 이름", "category": "카테고리 id", "group": "세부 분류"}]}"""
+
+
+def save_catalog() -> None:
     (HERE / "techniques.json").write_text(
         "{\n" + ",\n".join(
             f'  {json.dumps(cid)}: {{\n    "name": {json.dumps(c["name"], ensure_ascii=False)},\n'
@@ -151,18 +143,94 @@ def add_new_techniques(keywords: list[str], max_new: int | None = None) -> list[
         ) + "\n}\n",
         encoding="utf-8",
     )
-    log(f"기법 사전에 새 기법 {len(added)}개 추가: {', '.join(n for _, n in added)}")
-    for cat, name in added[:max_new]:
+
+
+def add_new_techniques(keywords: list[str], max_new: int | None = None, notes: dict[str, dict] | None = None) -> list[str]:
+    """논문에서 추출된 키워드 중:
+    1) 카탈로그에 없는 키워드는 LLM으로 분류해 techniques.json에 추가(동의어는 기존 기법으로 매핑)하고,
+    2) 논문 키워드에 해당하는 모든 기법 중 아직 마크다운 카드(.md)가 없는 것은 카드를 생성한다."""
+    cand = []
+    for k in keywords:
+        k = k.strip()
+        if k and not known_technique(k) and _norm(k) not in {_norm(c) for c in cand}:
+            cand.append(k)
+
+    alias_map: dict[str, str] = {}
+    added: list[tuple[str, str]] = []
+    if cand:
+        cats = {cid: {"name": c["name"], "groups": list(c["groups"])} for cid, c in CATALOG.items()}
+        existing = ", ".join(t for _, t in all_techniques())
+        for i in range(0, len(cand), 8):
+            batch = cand[i:i + 8]
+            try:
+                j = parse_json(llm_chat(
+                    CLASSIFY_SYSTEM,
+                    f"카테고리: {json.dumps(cats, ensure_ascii=False)}\n\n기존 기법: {existing}\n\n키워드: {json.dumps(batch, ensure_ascii=False)}",
+                ))
+            except Exception as e:
+                log(f"새 기법 분류 실패: {e}")
+                continue
+            for it in j.get("items", []):
+                kw = (it.get("keyword") or "").strip()
+                name = (it.get("name") or "").strip()
+                cid = it.get("category")
+                if it.get("skip") or not name:
+                    continue
+                if kw:
+                    alias_map[_norm(kw)] = name
+                if known_technique(name):
+                    alias_map[_norm(kw)] = known_technique(name)  # 기존 기법으로 정규화
+                    continue
+                if cid not in CATALOG:
+                    continue
+                group = (it.get("group") or "기타").strip()
+                CATALOG[cid]["groups"].setdefault(group, []).append(name)
+                added.append((CATALOG[cid]["name"], name))
+
+    if added:
+        save_catalog()
+        log(f"기법 사전에 새 기법 {len(added)}개 추가: {', '.join(n for _, n in added)}")
+
+    ALIAS_MAP.update(alias_map)
+    # notes가 주어졌으면 키워드 표기를 카탈로그 정식 이름으로 정규화
+    if notes and alias_map:
+        for pk in notes.values():
+            if "keywords" in pk:
+                pk["keywords"] = [alias_map.get(_norm(k), k) for k in pk["keywords"]]
+
+    # 오늘 논문에 등장한 키워드(기존 기법 + 신규 추가 기법 모두) 중 아직 .md 카드가 없는 것은 모두 생성
+    to_make: list[tuple[str, str]] = []
+    seen_norm: set[str] = set()
+    for k in keywords:
+        mapped = alias_map.get(_norm(k), k.strip())
+        hit = known_technique_cat(mapped)
+        if hit and _norm(hit[1]) not in seen_norm:
+            seen_norm.add(_norm(hit[1]))
+            if not (TECH_DIR / f"{slugify(hit[1])}.md").exists():
+                to_make.append(hit)
+
+    created = []
+    for cat, name in to_make[:max_new]:
         try:
             make_card(name, cat)
+            created.append(name)
         except Exception as e:
             log(f"카드 생성 실패 {name}: {e}")
-    return [n for _, n in added]
+    return created
 
 
 def make_card(name: str, category: str) -> Path:
     path = TECH_DIR / f"{slugify(name)}.md"
-    j = parse_json(llm_chat(CARD_SYSTEM, f"기법: {name}\n분류: {category}"))
+    # LLM이 문자열 안에 따옴표를 그대로 넣어 JSON이 깨지는 경우가 있어 한 번 더 요청한다
+    for attempt in range(3):
+        try:
+            hint = "" if attempt == 0 else "\n\n(주의: 반드시 유효한 JSON. 문자열 안의 큰따옴표는 \\\" 로 이스케이프하거나 작은따옴표를 쓸 것)"
+            j = parse_json(llm_chat(CARD_SYSTEM, f"기법: {name}\n분류: {category}{hint}"))
+            break
+        except ValueError as e:  # json.JSONDecodeError 포함
+            log(f"카드 JSON 파싱 실패 {name} ({attempt + 1}회차): {e}")
+            if attempt == 2:
+                raise
     bullets = lambda xs: "\n".join(f"- {x}" for x in xs) or "- (없음)"
     links = lambda xs: "\n".join(f"- {link_if_known(x)}" for x in xs) or "- (없음)"
     path.write_text(
@@ -441,7 +509,8 @@ EXPLAIN_SYSTEM = """당신은 로보틱스·피지컬 AI **입문자**에게 오
 규칙:
 - 주어진 논문 **전부**를 빠짐없이 설명한다. 고르거나 빼지 않는다. 목록 자체에 대한 메타 코멘트 금지.
 - 전문용어는 처음 나올 때 괄호로 쉬운 설명을 붙인다. 예: task-specific policy(과제 하나만을 위해 따로 학습시킨 로봇 제어 모델).
-- 초록에 없는 수치·사실을 지어내지 않는다.
+- 논문마다 [초록]과 (있으면) [결론]이 주어진다. 결론에 나온 실제 결과·한계·향후 과제를 '주장'과 '생각해 볼 질문'에 적극 반영한다.
+- 주어진 초록·결론에 없는 수치·사실을 지어내지 않는다.
 - 한국어, 기술 용어는 영어 원문 유지. 수식 기호($) 쓰지 말 것.
 JSON만 출력:
 {"papers": [{"id": "주어진 id 그대로",
@@ -461,18 +530,76 @@ PICK_SYSTEM = """당신은 AI/피지컬 AI 연구자의 아침 브리핑을 쓴�
 
 
 # ---------------------------------------------------------------- 논문 해설 · 카드
+_SEC_H2 = re.compile(r'<h2 class="ltx_title ltx_title_section"[^>]*>(.*?)</h2>', re.S)
+_CONCL_NAMES = [r"conclusions?", r"concluding remarks", r"summary", r"discussion"]  # 앞쪽일수록 우선
+
+
+def fetch_conclusion(pid: str, limit: int = 2500) -> str:
+    """arXiv HTML 버전(arxiv.org/html/<id>)에서 결론 섹션 본문을 뽑는다. HTML이 없거나 못 찾으면 빈 문자열."""
+    import html as _html
+    try:
+        req = urllib.request.Request(f"https://arxiv.org/html/{pid}", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            page = r.read().decode("utf-8", "replace")
+    except Exception:
+        return ""
+    heads = [(m.start(), m.end(), re.sub(r"<[^>]+>", "", m.group(1))) for m in _SEC_H2.finditer(page)]
+    pick = None
+    for pat in _CONCL_NAMES:
+        hits = [h for h in heads if re.search(rf"^\W*[\dA-Z.]*\s*{pat}\b", h[2].strip(), re.I)]
+        if hits:
+            pick = hits[-1]
+            break
+    if not pick:
+        return ""
+    nxt = [h[0] for h in heads if h[0] > pick[0]]
+    end = min([page.find('<section class="ltx_bibliography"', pick[1]) % (len(page) + 1)] + nxt + [len(page)])
+    body = page[pick[1]:end]
+    body = re.sub(r'<math[^>]*alttext="([^"]*)"[^>]*>.*?</math>', r" \1 ", body, flags=re.S)  # 수식은 LaTeX 원문으로
+    body = re.sub(r"<(script|style|figure|table)[^>]*>.*?</\1>", " ", body, flags=re.S)
+    text = " ".join(_html.unescape(re.sub(r"<[^>]+>", " ", body)).split())
+    return text[:limit]
+
+
 def explain_papers(papers: list[dict]) -> dict[str, dict]:
     """논문 목록 → {id: 입문자용 해설(oneline/background/claim/connect/question/keywords)}. 5편씩 나눠 요청."""
     names = ", ".join(t for _, t in all_techniques())
     notes: dict[str, dict] = {}
+
+    # 초록만으로는 너무 간추려져서 결론 섹션도 같이 준다 (arXiv HTML이 없으면 초록만)
+    for p in papers:
+        if "conclusion" not in p:
+            p["conclusion"] = fetch_conclusion(p["id"])
+    log(f"결론 섹션 확보: {sum(bool(p['conclusion']) for p in papers)}/{len(papers)}편")
+
+    def ask(batch: list[dict]) -> None:
+        listing = "\n\n".join(
+            f"### {p['id']} | {p['title']}\n[초록] {p['abstract'][:1500]}"
+            + (f"\n[결론] {p['conclusion']}" if p.get("conclusion") else "")
+            for p in batch
+        )
+        jb = parse_json(llm_chat(EXPLAIN_SYSTEM, f"기법 목록: {names}\n\n논문:\n{listing}"))
+        notes.update({str(pk.get("id")): pk for pk in jb.get("papers", [])})
+
     for i in range(0, len(papers), 5):
         batch = papers[i:i + 5]
-        listing = "\n".join(f"- {p['id']} | {p['title']} | {p['abstract'][:1200]}" for p in batch)
-        try:
-            jb = parse_json(llm_chat(EXPLAIN_SYSTEM, f"기법 목록: {names}\n\n논문:\n{listing}"))
-            notes.update({str(pk.get("id")): pk for pk in jb.get("papers", [])})
-        except Exception as e:
-            log(f"논문 해설 실패({i}~): {e}")
+        # 5편 묶음 → 실패하면 30초 쉬고 한 번 더 → 그래도 실패하면 1편씩 (응답이 짧아 타임아웃에 덜 걸림)
+        for attempt in range(2):
+            try:
+                ask(batch)
+                break
+            except Exception as e:
+                log(f"논문 해설 실패({i}~, {attempt + 1}회차): {e}")
+                time.sleep(30)
+        else:
+            for p in batch:
+                try:
+                    ask([p])
+                except Exception as e:
+                    log(f"논문 해설 최종 실패 {p['id']}: {e}")
+        missing = [p["id"] for p in batch if p["id"] not in notes]
+        if missing:
+            log(f"해설 누락 {len(missing)}편: {', '.join(missing)}")
     return notes
 
 
@@ -567,7 +694,7 @@ def sync_saved() -> bool:
         meta = arxiv_lookup(new_ids)
         papers = [meta[i] for i in new_ids if i in meta]
         notes = explain_papers(papers)
-        add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])])
+        add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])], notes=notes)
         today = str(dt.date.today())
         for p in papers:
             db[p["id"]] = dict(p, saved=today, folders=marks[p["id"]], note=notes.get(p["id"], {}))
@@ -686,8 +813,8 @@ def run_daily(day: dt.date, push: bool, cards: int = 1) -> Path:
     # 두 출처에 같은 논문이 있으면 LLM에는 한 번만 보낸다 (화면에는 양쪽 열에 모두 표시)
     uniq = list({p["id"]: p for p in hf + ax}.values())
     notes = explain_papers(uniq)
-    # 논문 키워드 중 기법 사전에 없는 것은 자동 추가 + 카드 생성
-    new_techs = add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])])
+    # 논문 키워드 중 기법 사전에 없는 것은 자동 추가 + 아직 카드(.md)가 없는 기법은 모두 카드 생성
+    new_techs = add_new_techniques([k for pk in notes.values() for k in pk.get("keywords", [])], notes=notes)
     write_tech_index()
     digest = "\n".join(f"- {p['title']}: {notes.get(p['id'], {}).get('oneline', '')}" for p in uniq)
     j = parse_json(llm_chat(PICK_SYSTEM, f"오늘의 기법: {tech_name}\n\n오늘의 논문:\n{digest}"))
@@ -789,6 +916,29 @@ def serve(at: str, push: bool, cards: int = 1) -> None:
         time.sleep(60)
 
 
+def backfill_daily_keywords() -> None:
+    """기존 데일리 페이지들의 미연결 키워드(<span class="dp-tech">)를 추출해 기법 사전에 추가·카드 생성 후 링크로 치환."""
+    load_env()
+    TECH_DIR.mkdir(parents=True, exist_ok=True)
+    md_files = sorted(DAILY_DIR.glob("????-??/????-??-??.md"), reverse=True)
+    span_re = re.compile(r'<span class="dp-tech">(.*?)</span>')
+    all_kws: list[str] = []
+    for f in md_files:
+        for m in span_re.finditer(f.read_text(encoding="utf-8")):
+            all_kws.append(m.group(1))
+    if not all_kws:
+        log("미반영 키워드 없음")
+        return
+    new_techs = add_new_techniques(all_kws)
+    write_tech_index()
+    for f in md_files:
+        txt = f.read_text(encoding="utf-8")
+        new_txt = span_re.sub(lambda m: tech_link(m.group(1), new_techs), txt)
+        if new_txt != txt:
+            f.write_text(new_txt, encoding="utf-8")
+            log(f"데일리 키워드 링크 갱신: {f.relative_to(ROOT)}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -797,6 +947,7 @@ def main() -> None:
     s.add_argument("--cards", type=int, default=1, help="하루에 만들 기법 카드 수")
     c = sub.add_parser("card"); c.add_argument("name"); c.add_argument("--category", default="기타")
     sub.add_parser("index", help="기법 사전 목차·카테고리 페이지만 다시 생성")
+    sub.add_parser("backfill", help="기존 데일리의 미연결 키워드를 기법 사전에 반영·카드 생성")
     sv = sub.add_parser("saved", help="alphaXiv 북마크 → 즐겨찾기 논문 동기화"); sv.add_argument("--push", action="store_true")
     a = ap.parse_args()
     if a.cmd == "saved":
@@ -808,6 +959,8 @@ def main() -> None:
         serve(a.at, a.push, a.cards)
     elif a.cmd == "index":
         write_tech_index()
+    elif a.cmd == "backfill":
+        backfill_daily_keywords()
     else:
         load_env()
         TECH_DIR.mkdir(parents=True, exist_ok=True)

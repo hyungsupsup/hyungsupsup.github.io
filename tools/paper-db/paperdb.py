@@ -227,16 +227,19 @@ def llm_chat(system: str, user: str) -> str:
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
         },
         headers={"Authorization": f"Bearer {key}"} if key else None,
+        timeout=300,  # 여러 편을 한 번에 해설하면 응답이 길어서 3분을 넘기기도 한다
     )
     return res["choices"][0]["message"]["content"]
 
 
 def parse_json(text: str) -> dict:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.S)  # reasoning 모델 대응
-    m = re.search(r"\{.*\}", text, re.S)
-    if not m:
+    start = text.find("{")
+    if start < 0:
         raise ValueError("JSON not found")
-    return json.loads(m.group(0))
+    # 첫 JSON 객체 하나만 읽는다. 뒤에 설명이나 두 번째 객체가 붙어 있어도 무시 ("Extra data" 방지)
+    obj, _ = json.JSONDecoder().raw_decode(text[start:])
+    return obj
 
 
 def summarize_one(p: dict) -> dict | None:
