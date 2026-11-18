@@ -892,12 +892,20 @@ def git_push(msg: str) -> None:
 def serve(at: str, push: bool, cards: int = 1) -> None:
     hh, mm = map(int, at.split(":"))
     log(f"상주 모드 시작 — 매일 {at} 실행 (Ctrl+C 종료)")
+    load_env()
     last_sync = 0.0
+    extra_day = None
     while True:
         now = dt.datetime.now()
         today = now.date()
         due = now.time() >= dt.time(hh, mm)
         path = daily_path(today)
+        # .env의 DAILY_EXTRA_CMD: 같은 시각에 함께 돌릴 로컬 작업 (별도 프로세스, 하루 한 번)
+        extra = os.environ.get("DAILY_EXTRA_CMD", "").strip()
+        if due and extra and extra_day != today:
+            extra_day = today
+            log(f"추가 작업 시작: {extra}")
+            subprocess.Popen(extra, cwd=ROOT, shell=True)
         if due and (not path.exists() or is_generating(path)):  # 생성 중 표시만 남은 채 실패했으면 재시도
             try:
                 run_daily(today, push, cards)

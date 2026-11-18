@@ -37,3 +37,6 @@ Thumbs.db
 .git-supnote/
 note.md
 .wrangler/
+
+# 로컬 전용 (공개·비공개 저장소 모두 제외)
+brief/
