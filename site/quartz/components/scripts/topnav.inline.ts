@@ -10,8 +10,8 @@ const TABS: [string, string][] = [
   ["로드맵", "roadmap"],
 ]
 
-// 로컬(내 PC)에서 띄운 사이트에서만 보이는 탭 (지금은 없음 — 브리핑은 홈 카드로 표시: home-brief.inline.ts)
-const LOCAL_TABS: [string, string][] = []
+// 로컬(내 PC)에서 띄운 사이트에서만 보이는 탭 — 로드맵(마지막 탭) 바로 왼쪽에 들어간다
+const LOCAL_TABS: [string, string][] = [["연구실", "yeongu"]]
 const IS_LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname)
 
 function currentSlug(): string {
@@ -31,7 +31,7 @@ function renderTopnav() {
   const nav = document.createElement("nav")
   nav.className = "sn-topnav"
   nav.setAttribute("aria-label", "주요 메뉴")
-  for (const [label, target] of IS_LOCAL ? [TABS[0], ...LOCAL_TABS, ...TABS.slice(1)] : TABS) {
+  for (const [label, target] of IS_LOCAL ? [...TABS.slice(0, -1), ...LOCAL_TABS, ...TABS.slice(-1)] : TABS) {
     const a = document.createElement("a")
     a.href = "/" + (target && !target.includes("-") || target === "" ? target + (target ? "/" : "") : target)
     a.textContent = label
