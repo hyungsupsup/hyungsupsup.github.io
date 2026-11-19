@@ -1,4 +1,4 @@
-# 섭노트
+# 섭웨이
 
 피지컬 AI(로봇 학습, VLA, 월드모델)를 공부하고 실험한 개인 연구 노트입니다.
 `notes/`가 [Quartz](https://quartz.jzhao.xyz)로 빌드되어 https://hyungsupsup.github.io 에 올라갑니다.
