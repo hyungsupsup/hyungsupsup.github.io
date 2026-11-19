@@ -1,6 +1,6 @@
 ---
 title: "🧱 아키텍처 모듈"
-date: 2026-11-19
+date: 2026-11-20
 tags: [technique-category]
 ---
 
@@ -11,5 +11,7 @@ tags: [technique-category]
 <div class="tc-grid"><div class="tc-card tc-todo"><h4>FiLM</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Perceiver</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div><div class="tc-card tc-todo"><h4>Q-Former</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>정규화</span></div>
 <div class="tc-grid"><a class="tc-card internal" href="/techniques/layer-normalization"><h4>Layer Normalization</h4><p>한 샘플(또는 한 토큰) 안의 특징 값들을 평균 0, 표준편차 1로 고르게 맞춰 주는 '자동 볼륨 노멀라이저'</p><span class="tc-badge">초안</span></a></div>
+<div class="mh-section"><span>Convolution</span></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/causal-convolution"><h4>Causal Convolution</h4><p>미래를 몰래 보지 않고 과거와 현재만 참고하는 1D 컨볼루션(입력 시퀀스에 작은 필터를 밀어 붙여 가중합을 계산하는 연산)입니다.</p><span class="tc-badge">초안</span></a></div>
 
 [[techniques/index|← 기법 사전 전체]]
