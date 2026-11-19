@@ -15,6 +15,9 @@ import topnavScript from "../../components/scripts/topnav.inline"
 // [supway custom] 데일리 카드 ☆ 담기 → alphaXiv 북마크 (tools/save-worker)
 // @ts-ignore
 import saveScript from "../../components/scripts/save.inline"
+// [supway custom] 로컬에서만 홈 상단에 개인 카드 표시
+// @ts-ignore
+import homeBriefScript from "../../components/scripts/home-brief.inline"
 import baseStyles from "../../styles/base.scss"
 import customStyles from "../../styles/custom.scss"
 import popoverStyle from "../../components/styles/popover.scss"
@@ -100,6 +103,7 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
   // [supway custom] 상단 탭 내비게이션
   componentResources.afterDOMLoaded.push(topnavScript)
   componentResources.afterDOMLoaded.push(saveScript)
+  componentResources.afterDOMLoaded.push(homeBriefScript)
 
   // popovers
   if (cfg.enablePopovers) {

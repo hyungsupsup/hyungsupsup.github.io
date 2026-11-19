@@ -540,3 +540,21 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 .bf .house-head .muted { font-size: .8rem; }
 .bf .verdict { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border-left: 4px solid var(--sn-text-muted); background: var(--sn-fill); }
 .bf .verdict.ok { border-color: #2ea86b; } .bf .verdict.mid { border-color: #d4a017; } .bf .verdict.no { border-color: #d9534f; }
+
+/* ---------- 로컬 홈 카드 (home-brief.inline.ts) ---------- */
+.bf-home { margin: 0 0 2rem; }
+.bf-home .bf-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.bf-home .bf-trivia { grid-column: 1 / -1; }
+@media (max-width: 1000px) { .bf-home .bf-grid { grid-template-columns: 1fr; } }
+.bf-home .card { margin: 0; height: 100%; max-height: 640px; overflow: auto; }
+.bf-home .bf-trivia .card { max-height: none; }
+.bf-home .card h2 { font-size: 1.05rem; position: sticky; top: -16px; background: var(--sn-card); padding: 4px 0 6px; margin-top: -4px; z-index: 1; }
+.bf-home table { font-size: .78rem; }
+.bf-home .house-head { flex-direction: column; gap: 2px; }
+.bf-home .bf-trivia .list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
+.bf-home .bf-trivia .list li { border-top: 0; }
+@media (max-width: 1000px) { .bf-home .bf-trivia .list { grid-template-columns: 1fr; } }
+
+/* 홈에서는 청약 표를 간추림: 특별공급 상세·잔금 열 숨김 (전체는 각 단지 공고 링크에서) */
+.bf-home .bf-housing td .muted { display: none; }
+.bf-home .bf-housing th:nth-child(6), .bf-home .bf-housing td:nth-child(6) { display: none; }

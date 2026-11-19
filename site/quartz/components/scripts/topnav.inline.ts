@@ -10,8 +10,8 @@ const TABS: [string, string][] = [
   ["로드맵", "roadmap"],
 ]
 
-// 로컬(내 PC)에서 띄운 사이트에서만 보이는 탭. 해당 폴더는 git 로컬 exclude라 공개 사이트에는 페이지도 없다.
-const LOCAL_TABS: [string, string][] = [["브리핑", "brief"]]
+// 로컬(내 PC)에서 띄운 사이트에서만 보이는 탭 (지금은 없음 — 브리핑은 홈 카드로 표시: home-brief.inline.ts)
+const LOCAL_TABS: [string, string][] = []
 const IS_LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname)
 
 function currentSlug(): string {
