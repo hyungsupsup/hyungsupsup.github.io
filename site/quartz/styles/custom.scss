@@ -681,3 +681,8 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 }
 @media (min-width: 901px) and (max-width: 1150px) { .bf .ngrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .bf a.nfeat > svg, .bf a.ncard > svg, .bf a.nfeat .external-icon, .bf a.ncard .external-icon { display: none !important; }
+
+/* 청약 표: 열 이름 아래 쉬운 설명, 잔금 열 다시 표시 */
+.bf .thsub { display: block; margin-top: 2px; font-size: .68rem; font-weight: 400; color: var(--sn-text-faint); line-height: 1.35; white-space: normal; }
+.bf-home .bf-housing th:nth-child(6), .bf-home .bf-housing td:nth-child(6) { display: table-cell !important; }
+.bf-home .bf-housing table th { vertical-align: bottom; }
