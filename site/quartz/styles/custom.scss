@@ -107,6 +107,15 @@ body { color: var(--dark); }
       font-weight: 800;
       letter-spacing: -0.03em;
       & a { white-space: nowrap; color: var(--dark) !important; }
+      /* 텍스트 제목 대신 로고 이미지 (quartz/static/supway.png) */
+      & a {
+        display: block;
+        width: 80px;
+        height: 45px;
+        background: url("/static/supway.png") center / contain no-repeat;
+        font-size: 0;
+        color: transparent !important;
+      }
     }
     & .sn-topnav { order: 1; flex: 1 1 auto; justify-content: flex-end; min-width: 0; }
     & .search { order: 2; flex: 0 0 auto; width: 160px; min-width: 0; }
@@ -558,3 +567,32 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 /* 홈에서는 청약 표를 간추림: 특별공급 상세·잔금 열 숨김 (전체는 각 단지 공고 링크에서) */
 .bf-home .bf-housing td .muted { display: none; }
 .bf-home .bf-housing th:nth-child(6), .bf-home .bf-housing td:nth-child(6) { display: none; }
+
+/* ---------- 브리핑 카드 v2: 한 줄 훑기 → 눌러서 펼치기 ---------- */
+.bf-home .card { max-height: none; overflow: visible; padding: 14px 16px 10px; }
+.bf-home .card h2 { position: static; margin: 0 0 6px; padding: 0; font-size: .95rem; color: var(--sn-text-muted); font-weight: 700; letter-spacing: .02em; }
+.bf details.row { border-top: 1px solid var(--sn-border); }
+.bf details.row:first-of-type { border-top: 0; }
+.bf details.row > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  padding: 9px 2px; font-size: .92rem; font-weight: 600; color: var(--sn-text-strong); line-height: 1.4;
+}
+.bf details.row > summary::-webkit-details-marker { display: none; }
+.bf details.row > summary::after { content: "▸"; margin-left: auto; color: var(--sn-text-faint); font-size: .8rem; transition: transform .15s; flex: 0 0 auto; }
+.bf details.row[open] > summary::after { transform: rotate(90deg); }
+.bf details.row > summary:hover { color: var(--secondary); }
+.bf details.row .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf details.row .sub { color: var(--sn-text-muted); font-weight: 400; font-size: .8rem; white-space: nowrap; flex: 0 0 auto; }
+.bf details.row .tag { flex: 0 0 auto; margin: 0; }
+.bf details.row .more { padding: 0 2px 12px; font-size: .86rem; color: var(--sn-text-muted); }
+.bf details.row .more p { margin: 4px 0 0; }
+.bf details.row .more a { color: var(--secondary); }
+.bf .dday { flex: 0 0 auto; font-size: .72rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: var(--sn-fill); color: var(--sn-text-muted); }
+.bf .dday.hot { background: rgba(217, 83, 79, .14); color: #d9534f; }
+.bf .badge { flex: 0 0 auto; font-size: .72rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+.bf .badge.ok { background: rgba(46, 168, 107, .15); color: #2ea86b; }
+.bf .badge.mid { background: rgba(212, 160, 23, .15); color: #c4920f; }
+.bf .badge.no { background: rgba(217, 83, 79, .14); color: #d9534f; }
+.bf .hint { margin: 8px 0 0; font-size: .75rem; color: var(--sn-text-faint); }
+.bf .house { padding: 0; border: 0; }
+.bf-home .bf-trivia .card { padding-bottom: 6px; }

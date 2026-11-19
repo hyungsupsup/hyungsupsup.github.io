@@ -6,7 +6,9 @@ async function loadLocalCards() {
   if (!LOCAL_HOSTS.includes(location.hostname)) return
   if ((document.body.dataset.slug ?? "") !== "index") return
   const article = document.querySelector("article")
-  if (!article || article.querySelector(".bf-home")) return
+  // 첫 로드와 "nav" 이벤트가 겹쳐 두 번 실행될 수 있어, fetch 전에 자리를 먼저 잡아 둔다
+  if (!article || article.dataset.bfLoading || article.querySelector(".bf-home")) return
+  article.dataset.bfLoading = "1"
 
   let html = ""
   for (const url of ["/brief/", "/brief/index.html", "/brief.html"]) {
