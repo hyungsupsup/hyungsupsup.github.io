@@ -12,9 +12,13 @@ Isaac Sim, VLA, 월드모델을 직접 돌려 보면서 **무엇이 되고 무�
 - Isaac Sim 6.2.0.0 (pip, Python 3.12)
 
 ## 실험 목록
-| # | 실험 | 상태 | 관련 |
-|---|---|---|---|
-| 000 | [[lab/experiments/000-isaac-sim-setup\|Isaac Sim 설치]] | ✅ 완료 | [[knowledge/topics/sim2real]] |
+카드를 누르면 실험 기록 전체를 볼 수 있습니다. (최신 시작일 순)
+
+<!-- lab-cards:start -->
+<div class="lab-cards">
+<a class="lc-card internal" href="/lab/experiments/000-isaac-sim-setup" data-no-popover="true"><div class="lc-top"><span class="lc-num">000</span><span class="lc-status lc-done">완료</span></div><div class="lc-title">Isaac Sim 6.2 설치 (Windows 11, pip)</div><div class="lc-period">📅 2026-11-12</div><div class="lc-goal">Windows 11 노트북(RTX 4060 8GB)에 Isaac Sim을 설치하고 GUI가 실행되는지 확인한다.</div><div class="lc-tags"><span class="lc-tag">#isaac-sim</span><span class="lc-tag">#setup</span></div></a>
+</div>
+<!-- lab-cards:end -->
 
 ## 다음 실험 후보 (Phase 0~1)
 - 001 Franka pick & place 스크립트 제어 (RMPflow)

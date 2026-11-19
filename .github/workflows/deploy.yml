@@ -47,7 +47,7 @@ jobs:
       - name: Install Quartz plugins
         run: npx quartz plugin install
       - name: Build Quartz
-        run: npx quartz build -d ../notes
+        run: python3 ../tools/lab_cards.py && npx quartz build -d ../notes
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
