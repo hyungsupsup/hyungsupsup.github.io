@@ -529,3 +529,22 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 .dp-sv { --dp-accent: #d4a017; }
 .dp-saved-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; align-items: start; }
 @media (max-width: 900px) { .dp-saved-grid { grid-template-columns: 1fr; } }
+
+/* ---------- 로컬 전용 브리핑 (.bf) ---------- */
+.bf .card { background: var(--sn-card); border: 1px solid var(--sn-border); border-radius: 14px; padding: 16px 20px; margin: 0 0 16px; }
+.bf h2 { margin: 0 0 10px; font-size: 1.15rem; }
+.bf .list { list-style: none; margin: 0; padding: 0; }
+.bf .list li { padding: 10px 0; border-top: 1px solid var(--sn-border); }
+.bf .list li:first-child { border-top: 0; }
+.bf .list p, .bf .house p { margin: 4px 0 0; font-size: .9rem; }
+.bf .why { color: var(--secondary); }
+.bf .muted { color: var(--sn-text-muted); }
+.bf .tag { display: inline-block; font-size: .72rem; background: var(--highlight); color: var(--secondary); border-radius: 6px; padding: 0 6px; margin-right: 6px; }
+.bf table { width: 100%; border-collapse: collapse; font-size: .85rem; margin: 6px 0 0; }
+.bf th, .bf td { text-align: left; padding: 6px; border-top: 1px solid var(--sn-border); vertical-align: top; }
+.bf th { color: var(--sn-text-muted); font-weight: 600; border-top: 0; }
+.bf .house { padding: 14px 0; border-top: 1px solid var(--sn-border); }
+.bf .house-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.bf .house-head .muted { font-size: .8rem; }
+.bf .verdict { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border-left: 4px solid var(--sn-text-muted); background: var(--sn-fill); }
+.bf .verdict.ok { border-color: #2ea86b; } .bf .verdict.mid { border-color: #d4a017; } .bf .verdict.no { border-color: #d9534f; }
