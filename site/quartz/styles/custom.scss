@@ -775,3 +775,5 @@ a.lc-card:hover { transform: translateY(-2px); border-color: var(--secondary); b
 .lc-goal { color: var(--darkgray); font-weight: 400; font-size: .86rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .lc-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
 .lc-tag { font-size: .72rem; font-weight: 400; color: var(--gray); }
+/* 실험실은 카드 목록이 있으므로 Quartz 자동 폴더 목록 숨김 */
+body[data-slug="lab/index"] .page-listing { display: none; }

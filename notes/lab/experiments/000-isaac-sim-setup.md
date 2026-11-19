@@ -37,4 +37,8 @@ uv pip install --python .venv\Scripts\python.exe "isaacsim[all,extscache]==6.2.0
 
 ## 다음
 - GPU 드라이버 업데이트 후 성능 확인
-- 001 Franka pick & place
+- 다음 실험 후보 (Phase 0~1)
+  - 001 Franka pick & place 스크립트 제어 (RMPflow)
+  - 002 카메라 기반 색 분류 pick & place
+  - 003 시연 데이터 자동 생성기 (도메인 랜덤화)
+  - 004 Diffusion Policy 학습·재현
