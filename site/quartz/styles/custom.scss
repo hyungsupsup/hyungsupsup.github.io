@@ -651,3 +651,33 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 .bf .ncol li a { color: var(--sn-text-strong) !important; background: none !important; }
 .bf .ncol li a:hover { color: var(--secondary) !important; }
 .bf .ncol .press { display: inline-block; margin-left: 6px; font-size: .72rem; color: var(--sn-text-faint); }
+
+/* ---------- 뉴스 v2: 카테고리별 1위 큰 사진 + 썸네일 카드 9개 ---------- */
+.bf .nsec { padding: 14px 0 18px; border-top: 1px solid var(--sn-border); }
+.bf .nsec:first-of-type { border-top: 0; }
+.bf .nsec h3 { margin: 0 0 10px; font-size: 1rem; font-weight: 800; color: var(--sn-text-strong); }
+.bf .nsec h3::before { content: ""; display: inline-block; width: 4px; height: .95em; margin-right: 8px; border-radius: 2px; background: var(--secondary); vertical-align: -2px; }
+.bf a.nfeat, .bf a.ncard { color: inherit !important; background: none !important; text-decoration: none; }
+.bf .nfeat { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; margin-bottom: 12px; align-items: stretch; }
+.bf .nfeat .nimg { aspect-ratio: 16 / 10; border-radius: 10px; }
+.bf .nfeat b { display: block; font-size: 1.12rem; line-height: 1.4; color: var(--sn-text-strong); margin: 2px 0 6px; }
+.bf .nfeat p { margin: 0; font-size: .86rem; line-height: 1.6; color: var(--sn-text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bf .ngrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; }
+.bf .ncard { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: start; padding: 6px; border-radius: 10px; transition: background .15s; }
+.bf .ncard:hover, .bf .nfeat:hover { background: var(--sn-fill) !important; }
+.bf .ncard .nimg { aspect-ratio: 16 / 11; border-radius: 8px; }
+.bf .ncard b { font-size: .84rem; line-height: 1.4; font-weight: 600; color: var(--sn-text-strong); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bf .nimg { overflow: hidden; background: var(--sn-fill); }
+.bf .nimg img { width: 100%; height: 100%; object-fit: cover; display: block; margin: 0 !important; border-radius: 0 !important; }
+.bf .nimg.noimg { display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; color: var(--sn-text-faint); }
+.bf .rank { display: inline-block; min-width: 1.5em; font-size: .72rem; font-weight: 800; color: var(--secondary); margin-right: 2px; }
+.bf .nfeat .rank { font-size: .8rem; }
+.bf .nmeta { margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bf .nmeta .press { font-size: .72rem; color: var(--sn-text-faint); }
+.bf .nmeta .hot { font-size: .7rem; font-weight: 700; color: #e8590c; }
+@media (max-width: 900px) {
+  .bf .nfeat { grid-template-columns: 1fr; }
+  .bf .ngrid { grid-template-columns: 1fr; }
+}
+@media (min-width: 901px) and (max-width: 1150px) { .bf .ngrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bf a.nfeat > svg, .bf a.ncard > svg, .bf a.nfeat .external-icon, .bf a.ncard .external-icon { display: none !important; }
