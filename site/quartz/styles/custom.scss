@@ -601,3 +601,32 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 .bf-home .bf-knowledge { grid-column: span 2; }
 .bf-home .bf-talk { grid-column: span 1; }
 @media (max-width: 1000px) { .bf-home .bf-knowledge, .bf-home .bf-talk { grid-column: auto; } }
+
+/* ---------- 브리핑 카드 v3: 펼침 없이 전부 표시 + 줄마다 같은 높이, 넘치면 카드 안 스크롤 ---------- */
+.bf-home .bf-grid { align-items: stretch; grid-auto-rows: 460px; }
+.bf-home .bf-grid > div { min-width: 0; min-height: 0; }
+.bf-home .card {
+  height: 100%; max-height: none; overflow-y: auto; overflow-x: hidden;
+  padding: 0 18px 14px; display: block;
+  scrollbar-width: thin; scrollbar-color: var(--sn-border) transparent;
+}
+.bf-home .card h2 {
+  position: sticky; top: 0; z-index: 1; margin: 0 -18px 4px; padding: 14px 18px 8px;
+  background: var(--sn-card); border-bottom: 1px solid var(--sn-border);
+  font-size: .95rem; color: var(--sn-text-strong);
+}
+.bf .row { padding: 11px 0; border-top: 1px solid var(--sn-border); }
+.bf .row:first-of-type { border-top: 0; }
+.bf .row .sum { display: flex; align-items: center; gap: 8px; font-size: .92rem; font-weight: 700; color: var(--sn-text-strong); line-height: 1.4; }
+.bf .row .sum .t { min-width: 0; }
+.bf .row .sum .sub { color: var(--sn-text-muted); font-weight: 400; font-size: .78rem; margin-left: auto; white-space: nowrap; }
+.bf .row .sum .tag { flex: 0 0 auto; margin: 0; }
+.bf .row .more { padding: 4px 0 0; font-size: .84rem; line-height: 1.6; color: var(--sn-text-muted); }
+.bf .row .more p { margin: 3px 0 0; }
+.bf .row .more a { color: var(--secondary); }
+.bf .row .more table { font-size: .74rem; }
+.bf-home .bf-housing td .muted { display: inline; }
+@media (max-width: 1000px) { .bf-home .bf-grid { grid-auto-rows: 420px; } }
+.bf-home .bf-grid { gap: 16px !important; }
+.bf-home .bf-housing td .muted { display: none; }  /* 특별공급 유형 상세는 홈에서 생략 */
+.bf-home .bf-housing table th, .bf-home .bf-housing table td { padding: 5px 4px; white-space: nowrap; }
