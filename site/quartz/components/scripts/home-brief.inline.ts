@@ -33,7 +33,7 @@ async function loadLocalCards() {
   box.appendChild(title)
   const grid = document.createElement("div")
   grid.className = "bf-grid"
-  for (const key of ["news", "housing", "jobs", "knowledge", "talk"]) {
+  for (const key of ["news", "talk", "knowledge", "housing", "jobs"]) {
     const sec = src.querySelector(`.bf-${key}`)
     if (sec) grid.appendChild(sec)
   }

@@ -630,3 +630,13 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 .bf-home .bf-grid { gap: 16px !important; }
 .bf-home .bf-housing td .muted { display: none; }  /* 특별공급 유형 상세는 홈에서 생략 */
 .bf-home .bf-housing table th, .bf-home .bf-housing table td { padding: 5px 4px; white-space: nowrap; }
+
+/* ---------- 브리핑 카드 v4: 세로 한 줄 배치 (뉴스 → 대화 거리 → 지식 → 청약 → 채용), 내용 전부 표시 ---------- */
+.bf-home .bf-grid { display: flex !important; flex-direction: column; gap: 16px !important; }
+.bf-home .bf-grid > div { grid-column: auto !important; }
+.bf-home .card { height: auto !important; overflow: visible !important; padding: 0 22px 14px; }
+.bf-home .card h2 { position: static; }
+.bf-home .bf-housing td .muted { display: inline; font-size: .72rem; }
+.bf-home .bf-housing table th, .bf-home .bf-housing table td { white-space: normal; }
+.bf .src { font-size: .74rem; color: var(--sn-text-faint); }
+.bf .src a { color: var(--sn-text-muted) !important; text-decoration: underline; }
