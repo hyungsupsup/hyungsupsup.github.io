@@ -596,3 +596,8 @@ a.dp-star:hover { color: #d4a017 !important; border-color: #d4a017; }
 .bf .hint { margin: 8px 0 0; font-size: .75rem; color: var(--sn-text-faint); }
 .bf .house { padding: 0; border: 0; }
 .bf-home .bf-trivia .card { padding-bottom: 6px; }
+
+/* 둘째 줄: 오늘의 지식(2칸) + 대화 거리(1칸) */
+.bf-home .bf-knowledge { grid-column: span 2; }
+.bf-home .bf-talk { grid-column: span 1; }
+@media (max-width: 1000px) { .bf-home .bf-knowledge, .bf-home .bf-talk { grid-column: auto; } }
