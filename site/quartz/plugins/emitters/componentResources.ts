@@ -9,10 +9,10 @@ import spaRouterScript from "../../components/scripts/spa.inline"
 import popoverScript from "../../components/scripts/popover.inline"
 // @ts-ignore
 import prefetchScript from "../../components/scripts/prefetch.inline"
-// [섭웨이 custom] 상단 탭 내비게이션
+// [supway custom] 상단 탭 내비게이션
 // @ts-ignore
 import topnavScript from "../../components/scripts/topnav.inline"
-// [섭웨이 custom] 데일리 카드 ☆ 담기 → alphaXiv 북마크 (tools/save-worker)
+// [supway custom] 데일리 카드 ☆ 담기 → alphaXiv 북마크 (tools/save-worker)
 // @ts-ignore
 import saveScript from "../../components/scripts/save.inline"
 import baseStyles from "../../styles/base.scss"
@@ -97,7 +97,7 @@ async function joinScripts(scripts: string[]): Promise<string> {
 function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentResources) {
   const cfg = ctx.cfg.configuration
 
-  // [섭웨이 custom] 상단 탭 내비게이션
+  // [supway custom] 상단 탭 내비게이션
   componentResources.afterDOMLoaded.push(topnavScript)
   componentResources.afterDOMLoaded.push(saveScript)
 

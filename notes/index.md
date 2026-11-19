@@ -1,5 +1,5 @@
 ---
-title: 섭웨이
+title: supway
 date: 2026-11-12
 ---
 

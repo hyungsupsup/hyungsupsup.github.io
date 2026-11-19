@@ -1,4 +1,4 @@
-// [섭웨이 custom] 상단 탭 내비게이션.
+// [supway custom] 상단 탭 내비게이션.
 // SPA 이동 시 body가 다시 맞춰지며 삽입한 요소가 지워지므로 "nav"마다 다시 붙인다.
 const TABS: [string, string][] = [
   ["홈", ""],

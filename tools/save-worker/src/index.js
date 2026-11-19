@@ -1,4 +1,4 @@
-// 섭웨이 ☆ 담기 버튼 → alphaXiv 북마크 중계 (Cloudflare Worker)
+// supway ☆ 담기 버튼 → alphaXiv 북마크 중계 (Cloudflare Worker)
 // 비밀 값(wrangler secret): ALPHAXIV_API_KEY, SAVE_TOKEN
 // POST /ping  — 비밀번호 확인
 // POST /save  {"id": "2611.18359"} — alphaXiv 'Want to read' 폴더에 저장
