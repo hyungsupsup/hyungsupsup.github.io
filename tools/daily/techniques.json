@@ -36,7 +36,8 @@
       "Vision-Language": ["CLIP", "SigLIP"],
       "Self-Supervised Vision": ["DINO", "DINOv2", "MAE", "Contrastive Learning (SimCLR)"],
       "Predictive": ["JEPA"],
-      "Dimensionality Reduction": ["Principal Component Analysis", "Partial Least Squares"]
+      "Dimensionality Reduction": ["Principal Component Analysis", "Partial Least Squares"],
+      "3D Representation": ["3D Gaussian Splatting"]
     }
   },
   "efficiency": {
@@ -67,9 +68,9 @@
     "desc": "모방학습, 강화학습, 선호 학습. 정책을 어떻게 가르치는가.",
     "groups": {
       "모방학습": ["Behavior Cloning", "DAgger"],
-      "강화학습": ["PPO", "Offline RL"],
+      "강화학습": ["PPO", "Offline RL", "Group Relative Policy Optimization"],
       "선호 정렬": ["RLHF", "DPO"],
-      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Teacher Forcing", "K-FAC"],
+      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Teacher Forcing", "K-FAC", "Genetic Algorithm"],
       "불확실성 추정": ["Conformal Prediction"]
     }
   },

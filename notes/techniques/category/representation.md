@@ -1,6 +1,6 @@
 ---
 title: "👁️ 표현학습"
-date: 2026-11-20
+date: 2026-11-21
 tags: [technique-category]
 ---
 
@@ -13,5 +13,7 @@ tags: [technique-category]
 <div class="tc-grid"><a class="tc-card internal" href="/techniques/jepa"><h4>JEPA</h4><p>사진의 모든 픽셀을 그대로 베끼는 대신 '장면의 의미'만 요약해서 예측하는 자기지도 학습 틀 — 눈 감고 그림 그리기가 아니라 눈 감고 '분위기' 맞히기.</p><span class="tc-badge">초안</span></a></div>
 <div class="mh-section"><span>Dimensionality Reduction</span></div>
 <div class="tc-grid"><a class="tc-card internal" href="/techniques/principal-component-analysis"><h4>Principal Component Analysis</h4><p>데이터에서 가장 크게 움직이는 방향 몇 개만 골라 뽑아, 복잡한 정보를 간단히 요약하는 '차원 압축기'</p><span class="tc-badge">초안</span></a><a class="tc-card internal" href="/techniques/partial-least-squares"><h4>Partial Least Squares</h4><p>입력 데이터와 목표값이 서로 가장 잘 설명하는 '공통 언어'를 찾아 차원을 줄이는 지도 학습형 압축 기법</p><span class="tc-badge">초안</span></a></div>
+<div class="mh-section"><span>3D Representation</span></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/3d-gaussian-splatting"><h4>3D Gaussian Splatting</h4><p>수천만 개의 작은 반투명 색구름을 3D 공간에 뿌려 놓고, 카메라 방향에 따라 겹쳐서 그림을 그리는 3D 장면 표현</p><span class="tc-badge">초안</span></a></div>
 
 [[techniques/index|← 기법 사전 전체]]
