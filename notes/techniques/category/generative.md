@@ -1,6 +1,6 @@
 ---
 title: "🌫️ 생성모델"
-date: 2026-11-21
+date: 2026-11-22
 tags: [technique-category]
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "🎓 학습 기법"
-date: 2026-11-21
+date: 2026-11-22
 tags: [technique-category]
 ---
 

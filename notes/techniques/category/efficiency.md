@@ -1,6 +1,6 @@
 ---
 title: "⚡ 효율화·적응"
-date: 2026-11-21
+date: 2026-11-22
 tags: [technique-category]
 ---
 
@@ -13,5 +13,7 @@ tags: [technique-category]
 <div class="tc-grid"><div class="tc-card tc-todo"><h4>Mixture of Experts</h4><p>아직 작성 전 — 데일리에서 순서대로 추가됨</p><span class="tc-badge">예정</span></div></div>
 <div class="mh-section"><span>추론 가속</span></div>
 <div class="tc-grid"><a class="tc-card internal" href="/techniques/speculative-decoding"><h4>Speculative Decoding</h4><p>작은 모델이 빠르게 '초안'을 여러 개 던지고, 큰 모델이 그걸 한 번에 채점해서 맞는 것만 채택하는 방식으로 LLM 추론을 2~3배 빠르게 만드는 기법 — 빠른 조수가 받아쓰고 선생님이 검토하는 회의록과 비슷하다.</p><span class="tc-badge">초안</span></a></div>
+<div class="mh-section"><span>Model Merging</span></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/task-arithmetic"><h4>Task Arithmetic</h4><p>미리 학습된 모델에 '작업별 변화량'을 더하거나 빼서 능력을 조합하는, 모델 가중치용 레고 블록 놀이.</p><span class="tc-badge">초안</span></a></div>
 
 [[techniques/index|← 기법 사전 전체]]

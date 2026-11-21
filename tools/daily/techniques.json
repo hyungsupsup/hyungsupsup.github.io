@@ -48,7 +48,8 @@
       "Parameter-Efficient Fine-Tuning": ["LoRA", "QLoRA", "Adapter", "Prefix Tuning"],
       "압축·경량화": ["Knowledge Distillation", "Quantization"],
       "조건부 계산": ["Mixture of Experts"],
-      "추론 가속": ["Speculative Decoding"]
+      "추론 가속": ["Speculative Decoding"],
+      "Model Merging": ["Task Arithmetic"]
     }
   },
   "architecture": {
