@@ -1,6 +1,6 @@
 ---
 title: "⚡ 효율화·적응"
-date: 2026-11-22
+date: 2026-11-23
 tags: [technique-category]
 ---
 
