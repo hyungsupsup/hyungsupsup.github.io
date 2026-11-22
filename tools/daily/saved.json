@@ -21,5 +21,30 @@
     "Behavior Cloning"
    ]
   }
+ },
+ "2611.26603": {
+  "id": "2611.26603",
+  "title": "Depth Pro 2: Sharp and Temporally Consistent Metric Monocular Depth",
+  "abstract": "We present Depth Pro 2, an approach to estimating dense metric depth for images and video at full resolution. By analyzing prior methods for monocular depth estimation, we find that they commonly trade off temporal consistency and boundary sharpness: multi-frame methods favor consistency, single-frame methods favor sharpness. To overcome this trade-off, we train a single, scalable network that processes both images and video and predicts depth maps at native resolution. Depth Pro 2 produces depth maps that are metrically accurate, sharp, and temporally consistent all at once, outperforming prior work in all of these dimensions. We release a family of models that define a new Pareto frontier in terms of metric accuracy, sharpness, temporal consistency, and runtime. We release code and weights at https://apple-aiml-research.github.io/ml-depth-pro-2/",
+  "published": "2026-11-19",
+  "conclusion": "We presented a family of models that estimate sharp and temporally consistent metric depth. By analyzing prior approaches to monocular depth estimation, we observed a dichotomy between image-based methods that produce sharp depth maps and video-based methods that are temporally stable but elide detail. Depth Pro 2 overcomes this trade-off and provides unprecedented sharpness and temporal stability. We release a family of models, each of which processes both single images and video sequences at full resolution, and can process video in a streaming fashion. The smallest model, Depth Pro 2-S, processes streaming 1080p video at 53 fps on a single GPU. The largest model, Depth Pro 2-H + , processes 1080p video at 8 fps and sets the new state of the art on metric depth accuracy, boundary sharpness, and temporal stability all at once. References Ahmadyan et al. (2021) Adel Ahmadyan, Liangkai Zhang, Artsiom Ablavatski, Jianing Wei, and Matthias Grundmann. Objectron: A large scale dataset of object-centric videos in the wild with pose annotations. In CVPR , 2021. Arivazhagan et al. (2019) Naveen Arivazhagan, Ankur Bapna, Orhan Firat, Dmitry Lepikhin, Melvin Johnson, Maxim Krikun, Mia Xu Chen, Yuan Cao, George Foster, Colin Cherry, Wolfgang Macherey, Zhifeng Chen, and Yonghui Wu. Massively multilingual neural machine translation in the wild: Findings and challenges. In NAACL , 2019. Arnab et al. (2021) Anurag Arnab, Mostafa Dehghani, Georg Heigold, Chen Sun, Mario Lučić, and Cordelia Schmid. ViViT: A video vision transformer. In ICCV , 2021. Arnold et al. (2022) Eduardo Arnold, Jamie Wynn, Sara Vicente, Guillermo Garcia-Hernando, Áron Monszpart, Victor Prisacariu, Daniyar Turmukhambetov, and Eric Brachmann. Map-free visual relocalization: Metric pose relative to a single image. In ECCV , 2022. Banerjee et al. (2025) Prithviraj Banerjee, Sindi Shkodrani, Pierre Moulon, Shreyas Hampali, Shangchen Han, Fan Zhang, Linguang Zhang, Jade Fountain, Edward Miller, Selen Basol, Richard A. Newcombe, Robert Wang, Jakob Julian Engel, and Tomas Hodan. HOT3D: Hand and object tracking in 3D from egocentric multi-view videos. In CVPR , 2025. Bertalmío et al. (2004) Marcelo Bertalmío, Pere Fort, and Daniel Sánchez-Crespo. Real-time, accurate depth of field using anisotropic diffusion and programmable graphics cards. In 3DPVT , 2004. Bertasius et al. (2021) Gedas Bertasius, Heng Wang, and Lorenzo Torresani. Is space-time attention all you need for video understanding? In ICML , 2021. ",
+  "saved": "2026-11-23",
+  "folders": [
+   "Want to read"
+  ],
+  "note": {
+   "id": "2611.26603",
+   "oneline": "하나의 카메라 영상에서 거리 지도를 만들 때, 사진처럼 선명하고 영상처럼 흔들리지 않게 동시에 만들 수 있을까?",
+   "background": "monocular depth estimation(한 대의 카메라 영상에서 각 픽셀의 거리 지도를 추정하는 과제)에서는 여러 프레임을 쓰는 방법이 temporal consistency(영상 프레임 사이에서 결과가 튀지 않고 안정적으로 유지되는 성질)에 유리하고, 한 장의 이미지를 쓰는 방법이 boundary sharpness(거리 지도의 물체 경계가 선명한 정도)에 유리해 두 특성을 동시에 잡기 어려웠다.",
+   "claim": "이 논문은 하나의 scalable network(크기를 키울 수 있는 신경망)로 이미지와 영상을 모두 처리하고 native resolution(원본 해상도)의 dense metric depth(픽셀별 실제 거리 지도)를 예측한다. 공개된 모델군은 metric depth(미터 단위 실제 거리) 정확도, 경계 선명도, temporal consistency를 모두 개선하며, 가장 작은 모델은 단일 GPU에서 1080p(풀 HD 해상도) 영상을 초당 53 프레임(fps)으로 streaming(프레임이 들어올 때마다 순차 처리)하고, 가장 큰 모델은 초당 8 프레임으로 최신 최고 성능을 달성한다.",
+   "connect": "이미지 diffusion의 선명한 결과와 video diffusion의 프레임 간 안정성을 동시에 잡으려는 시도에 가깝고, LLM 에이전트의 streaming generation처럼 입력이 들어올 때마다 상태를 이어받아 다음 출력을 만드는 방식과 유사하다.",
+   "question": "이 방식이 로봇의 실시간 장애물 회피나 AR/VR처럼 저지연 추론이 중요한 환경에서도 경계 선명도와 시간 안정성을 유지하려면 어떤 메모리·연산량 절충이 필요할까?",
+   "keywords": [
+    "Monocular Depth Estimation",
+    "Metric Depth",
+    "Temporal Consistency",
+    "Streaming Inference"
+   ]
+  }
  }
 }
