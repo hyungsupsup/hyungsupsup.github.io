@@ -1,6 +1,6 @@
 ---
 title: "🎯 Attention·시퀀스"
-date: 2026-11-23
+date: 2026-11-24
 tags: [technique-category]
 ---
 

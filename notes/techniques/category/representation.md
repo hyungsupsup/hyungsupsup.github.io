@@ -1,6 +1,6 @@
 ---
 title: "👁️ 표현학습"
-date: 2026-11-23
+date: 2026-11-24
 tags: [technique-category]
 ---
 

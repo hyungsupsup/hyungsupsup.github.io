@@ -71,7 +71,7 @@
       "모방학습": ["Behavior Cloning", "DAgger"],
       "강화학습": ["PPO", "Offline RL", "Group Relative Policy Optimization"],
       "선호 정렬": ["RLHF", "DPO"],
-      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Teacher Forcing", "K-FAC", "Genetic Algorithm"],
+      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Teacher Forcing", "K-FAC", "Genetic Algorithm", "Supervised Fine-Tuning"],
       "불확실성 추정": ["Conformal Prediction"]
     }
   },
