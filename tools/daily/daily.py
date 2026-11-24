@@ -508,7 +508,11 @@ EXPLAIN_SYSTEM = """당신은 로보틱스·피지컬 AI **입문자**에게 오
 독자: 로봇·강화학습·제어는 거의 모름. 대신 LLM 에이전트(도구 호출, ReAct 루프, RAG)와 diffusion·컴퓨터 비전은 잘 앎.
 규칙:
 - 주어진 논문 **전부**를 빠짐없이 설명한다. 고르거나 빼지 않는다. 목록 자체에 대한 메타 코멘트 금지.
-- 전문용어는 처음 나올 때 괄호로 쉬운 설명을 붙인다. 예: task-specific policy(과제 하나만을 위해 따로 학습시킨 로봇 제어 모델).
+- 본문(oneline/background/claim/connect/question)에는 괄호 용어 설명을 넣지 않는다. 대신 쉬운 말로 풀어 쓰고, 꼭 필요한 전문용어만 영어 그대로 쓴다.
+- 본문에 나온 전문용어는 전부 glossary에 모아 입문자용으로 풀이한다. policy, DAgger, LIBERO, drift 같은 로봇·RL 기본 용어도 빠뜨리지 않는다. 풀이는 비유나 예시를 섞어 1문장. 예: {"term": "policy", "desc": "카메라 영상과 센서 값을 보고 '다음에 팔을 어떻게 움직일지'를 바로 출력하는 로봇 제어 모델"}.
+- glossary는 최대 6개. 독자가 이미 아는 것(LLM·agent·tool call·ReAct·RAG·diffusion·CV 용어, training/model 같은 일반 단어)과 논문 고유 시스템명은 넣지 않는다. 로봇·RL·제어·벤치마크 용어 위주로 고른다.
+- 본문의 각 칸에는 영어 전문용어를 최대 3개까지만 쓴다. 나머지는 한국어로 풀어 쓴다 (예: 'feedback channel' → '동작을 고쳐 주는 신호').
+- 한 문장에는 아이디어 하나만. 수치는 가장 중요한 것 최대 3개, 'A → B' 형태로 무엇을 비교했는지 밝힌다.
 - 논문마다 [초록]과 (있으면) [결론]이 주어진다. 결론에 나온 실제 결과·한계·향후 과제를 '주장'과 '생각해 볼 질문'에 적극 반영한다.
 - 주어진 초록·결론에 없는 수치·사실을 지어내지 않는다.
 - 한국어, 기술 용어는 영어 원문 유지. 수식 기호($) 쓰지 말 것.
@@ -516,9 +520,10 @@ JSON만 출력:
 {"papers": [{"id": "주어진 id 그대로",
   "oneline": "한 줄: 비유나 질문 형태로, 처음 보는 사람도 바로 감 잡게 (1문장)",
   "background": "배경: 이 논문 전에는 보통 어떻게 했고 무엇이 불편/한계였나 (1~2문장)",
-  "claim": "이 논문의 주장: 무엇을 했고 결과가 어땠나, 용어는 괄호 설명 (2문장)",
+  "claim": "이 논문의 주장: 핵심 구조를 먼저 한 문장, 결과를 다음 문장 (2~3문장)",
   "connect": "내가 아는 것과의 연결: LLM 에이전트·diffusion·CV 중 가장 가까운 개념에 빗대기 (1문장)",
-  "question": "생각해 볼 질문: 이 논문이 열어 둔 갈림길이나 후속 연구 아이디어 (1문장)",
+  "question": "생각해 볼 질문: 이 논문이 열어 둔 갈림길이나 후속 연구 아이디어. 논문을 안 읽은 사람도 이해할 수 있게 (1문장)",
+  "glossary": [{"term": "본문에 나온 전문용어", "desc": "입문자용 쉬운 풀이 1문장"}],
   "keywords": ["이 논문을 이해하는 데 핵심인 기법·모듈·방법론 2~4개. 널리 쓰이는 영어 정식 이름으로(예: Flow Matching, LoRA, Diffusion Policy). 기법 목록에 같은 것이 있으면 그 표기를 그대로. 논문 고유 시스템명·너무 일반적인 단어 제외"]}]}"""
 
 
@@ -627,6 +632,10 @@ def render_card(p: dict, pk: dict, badge: str = "", new_techs=(), saved: bool = 
                            ("🔗", "내가 아는 것과의 연결", "connect"), ("❓", "생각해 볼 질문", "question")]:
         if pk.get(k):
             parts.append(row(icon, label, esc(pk[k])))
+    gl = [g for g in pk.get("glossary") or [] if isinstance(g, dict) and g.get("term")]
+    if gl:
+        items = "".join(f'<li><b>{esc(g["term"])}</b>: {esc(g.get("desc", ""))}</li>' for g in gl)
+        parts.append(row("📖", "용어 풀이", f'<ul class="dp-gloss">{items}</ul>'))
     if not pk:
         parts.append(row("📝", "초록", esc(p.get("abstract", "")[:400]) + "…"))
     techs = " ".join(tech_link(t, new_techs) for t in pk.get("keywords", []))

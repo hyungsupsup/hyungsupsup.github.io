@@ -57,7 +57,7 @@
     "emoji": "🧱",
     "desc": "모델을 조립하는 기본 블록과 조건 주입 방법.",
     "groups": {
-      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet"],
+      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet", "Looped Transformer"],
       "조건 주입·연결": ["FiLM", "Perceiver", "Q-Former"],
       "정규화": ["Layer Normalization"],
       "Convolution": ["Causal Convolution"]
