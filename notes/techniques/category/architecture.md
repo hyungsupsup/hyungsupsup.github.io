@@ -1,6 +1,6 @@
 ---
 title: "🧱 아키텍처 모듈"
-date: 2026-11-24
+date: 2026-11-25
 tags: [technique-category]
 ---
 

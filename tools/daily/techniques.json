@@ -37,7 +37,7 @@
       "Self-Supervised Vision": ["DINO", "DINOv2", "MAE", "Contrastive Learning (SimCLR)"],
       "Predictive": ["JEPA"],
       "Dimensionality Reduction": ["Principal Component Analysis", "Partial Least Squares"],
-      "3D Representation": ["3D Gaussian Splatting"]
+      "3D Representation": ["3D Gaussian Splatting", "MANO"]
     }
   },
   "efficiency": {
@@ -46,7 +46,7 @@
     "desc": "큰 모델을 적은 자원으로 학습·적응·배포하는 기법.",
     "groups": {
       "Parameter-Efficient Fine-Tuning": ["LoRA", "QLoRA", "Adapter", "Prefix Tuning"],
-      "압축·경량화": ["Knowledge Distillation", "Quantization"],
+      "압축·경량화": ["Knowledge Distillation", "Quantization", "Structured Pruning"],
       "조건부 계산": ["Mixture of Experts"],
       "추론 가속": ["Speculative Decoding"],
       "Model Merging": ["Task Arithmetic"]

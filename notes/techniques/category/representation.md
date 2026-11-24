@@ -1,6 +1,6 @@
 ---
 title: "👁️ 표현학습"
-date: 2026-11-24
+date: 2026-11-25
 tags: [technique-category]
 ---
 
@@ -14,6 +14,6 @@ tags: [technique-category]
 <div class="mh-section"><span>Dimensionality Reduction</span></div>
 <div class="tc-grid"><a class="tc-card internal" href="/techniques/principal-component-analysis"><h4>Principal Component Analysis</h4><p>데이터에서 가장 크게 움직이는 방향 몇 개만 골라 뽑아, 복잡한 정보를 간단히 요약하는 '차원 압축기'</p><span class="tc-badge">초안</span></a><a class="tc-card internal" href="/techniques/partial-least-squares"><h4>Partial Least Squares</h4><p>입력 데이터와 목표값이 서로 가장 잘 설명하는 '공통 언어'를 찾아 차원을 줄이는 지도 학습형 압축 기법</p><span class="tc-badge">초안</span></a></div>
 <div class="mh-section"><span>3D Representation</span></div>
-<div class="tc-grid"><a class="tc-card internal" href="/techniques/3d-gaussian-splatting"><h4>3D Gaussian Splatting</h4><p>수천만 개의 작은 반투명 색구름을 3D 공간에 뿌려 놓고, 카메라 방향에 따라 겹쳐서 그림을 그리는 3D 장면 표현</p><span class="tc-badge">초안</span></a></div>
+<div class="tc-grid"><a class="tc-card internal" href="/techniques/3d-gaussian-splatting"><h4>3D Gaussian Splatting</h4><p>수천만 개의 작은 반투명 색구름을 3D 공간에 뿌려 놓고, 카메라 방향에 따라 겹쳐서 그림을 그리는 3D 장면 표현</p><span class="tc-badge">초안</span></a><a class="tc-card internal" href="/techniques/mano"><h4>MANO</h4><p>MANO는 사람의 손을 몇 개의 숫자 조합으로 바꾸는 '손의 표준 틀'로, 손가락을 구부리고 손 모양을 늘리는 것처럼 3D 손 메시를 빠르게 만들 수 있게 해준다.</p><span class="tc-badge">초안</span></a></div>
 
 [[techniques/index|← 기법 사전 전체]]
