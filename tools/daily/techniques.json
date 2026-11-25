@@ -57,7 +57,7 @@
     "emoji": "🧱",
     "desc": "모델을 조립하는 기본 블록과 조건 주입 방법.",
     "groups": {
-      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet", "Looped Transformer"],
+      "백본": ["Transformer", "ViT", "DiT", "U-Net", "ResNet", "Looped Transformer", "Graph Neural Network"],
       "조건 주입·연결": ["FiLM", "Perceiver", "Q-Former"],
       "정규화": ["Layer Normalization"],
       "Convolution": ["Causal Convolution"]
@@ -71,7 +71,7 @@
       "모방학습": ["Behavior Cloning", "DAgger"],
       "강화학습": ["PPO", "Offline RL", "Group Relative Policy Optimization"],
       "선호 정렬": ["RLHF", "DPO"],
-      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Teacher Forcing", "K-FAC", "Genetic Algorithm", "Supervised Fine-Tuning"],
+      "학습 전략": ["Curriculum Learning", "Chain-of-Thought", "Teacher Forcing", "K-FAC", "Genetic Algorithm", "Supervised Fine-Tuning", "Self-Training", "Instruction Tuning"],
       "불확실성 추정": ["Conformal Prediction"]
     }
   },
