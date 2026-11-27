@@ -1,6 +1,6 @@
 ---
 title: "🦾 로봇 특화"
-date: 2026-11-27
+date: 2026-11-28
 tags: [technique-category]
 ---
 
